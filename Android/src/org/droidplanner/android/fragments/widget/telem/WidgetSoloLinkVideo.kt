@@ -4,13 +4,21 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.graphics.PointF
 import android.graphics.SurfaceTexture
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.view.GestureDetectorCompat
 import android.view.*
 import android.widget.TextView
+import com.google.android.gms.vision.Detector
+import com.google.android.gms.vision.Frame
+import com.google.android.gms.vision.Tracker
+import com.google.android.gms.vision.face.Face
+import com.google.android.gms.vision.face.FaceDetector
+import com.google.android.gms.vision.face.LargestFaceFocusingProcessor
 import com.o3dr.android.client.apis.CapabilityApi
 import com.o3dr.android.client.apis.CapabilityApi.FeatureIds
 import com.o3dr.android.client.apis.GimbalApi
@@ -20,6 +28,7 @@ import com.o3dr.services.android.lib.model.AbstractCommandListener
 import com.o3dr.services.android.lib.model.SimpleCommandListener
 import org.droidplanner.android.R
 import org.droidplanner.android.fragments.helpers.ApiListenerFragment
+import org.droidplanner.android.widgets.TrackerView
 import timber.log.Timber
 import kotlin.platform.platformStatic
 import kotlin.properties.Delegates
@@ -42,6 +51,10 @@ public class WidgetSoloLinkVideo : ApiListenerFragment() {
             }
         }
 
+    }
+
+    private val trackerView by Delegates.lazy {
+        getView()?.findViewById(R.id.face_detector_tracker_view) as TrackerView?
     }
 
     private val textureView by Delegates.lazy {
@@ -86,12 +99,73 @@ public class WidgetSoloLinkVideo : ApiListenerFragment() {
         getBroadcastManager().unregisterReceiver(receiver)
     }
 
+    private var reusedBmp: Bitmap? = null
+    private var conversionY: Float = 1f
+
     private fun tryStreamingVideo(){
         val drone = getDrone()
         videoStatus?.setVisibility(View.GONE)
 
+        val gimbalApi = GimbalApi.getApi(drone)
+
+        val faceDetector = FaceDetector.Builder(getContext())
+                .setTrackingEnabled(true)
+                .setProminentFaceOnly(true)
+                .setMode(FaceDetector.ACCURATE_MODE)
+                .build()
+        faceDetector.setProcessor(LargestFaceFocusingProcessor(faceDetector, object : Tracker<Face>(){
+
+            var pitch = 0f
+            var yaw = 0f
+            var roll = 0f
+
+            var startY = 0f
+
+            override fun onDone() = Timber.d("Face tracking completed.")
+
+            override fun onMissing(detections: Detector.Detections<Face>) {
+                trackerView?.updateTracker(PointF(0f, 0f), 0f, 0f)
+                gimbalApi.stopGimbalControl(orientationListener)
+            }
+
+            override fun onNewItem(id: Int, face: Face) {
+                Timber.d("Found new face to track!")
+                gimbalApi.startGimbalControl(orientationListener)
+                val orientation = gimbalApi.getGimbalOrientation()
+                pitch = orientation.getPitch()
+                yaw = orientation.getYaw()
+                roll = orientation.getRoll()
+                startY = face.getPosition().y
+            }
+
+            override fun onUpdate(detections: Detector.Detections<Face>, face: Face) {
+                val faceWidth = face.getWidth()
+                val faceHeight = face.getHeight()
+                val facePos = face.getPosition() // Top-left position of the face.
+                trackerView?.updateTracker(facePos, faceWidth, faceHeight)
+
+                //If face center is not at the middle of the screen, move the gimbal to center it.
+                //For now, just center it on the vertical axis, since only pitch can be updated when the copter is not flying.
+                pitch += (-facePos.y + startY) / conversionY
+//                Timber.d("Gimbal should be rotated by %f degrees", deltaPitchAngle)
+                gimbalApi.updateGimbalOrientation(pitch, yaw, roll, orientationListener)
+
+                startY = facePos.y
+                pitch = Math.min(pitch, 0f)
+                pitch = Math.max(pitch, -90f)
+            }
+
+        }))
+
+        val frameBuilder = Frame.Builder()
+
         textureView?.setSurfaceTextureListener(object : TextureView.SurfaceTextureListener{
             override fun onSurfaceTextureAvailable(surface: SurfaceTexture?, width: Int, height: Int) {
+                Timber.d("Created reusable bitmap: w %d, h %h", width, height)
+                reusedBmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+
+                conversionY = height / 90f
+
                 adjustAspectRatio(textureView as TextureView);
                 Timber.d("Starting video stream with tag %s", TAG)
                 SoloCameraApi.getApi(drone).startVideoStream(Surface(surface), TAG, object : AbstractCommandListener(){
@@ -112,6 +186,7 @@ public class WidgetSoloLinkVideo : ApiListenerFragment() {
 
             override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?): Boolean {
                 tryStoppingVideoStream()
+                faceDetector.release()
                 return true
             }
 
@@ -120,7 +195,11 @@ public class WidgetSoloLinkVideo : ApiListenerFragment() {
             }
 
             override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) {
-
+                val bmp = textureView?.getBitmap(reusedBmp)
+                if(bmp != null){
+                    val frame = frameBuilder.setBitmap(bmp).build()
+                    faceDetector.receiveFrame(frame)
+                }
             }
 
         })
