@@ -120,12 +120,16 @@ public class WidgetSoloLinkVideo : ApiListenerFragment() {
             var roll = 0f
 
             var startY = 0f
+            var isMissing = false
 
             override fun onDone() = Timber.d("Face tracking completed.")
 
             override fun onMissing(detections: Detector.Detections<Face>) {
-                trackerView?.updateTracker(PointF(0f, 0f), 0f, 0f)
-                gimbalApi.stopGimbalControl(orientationListener)
+                if(!isMissing) {
+                    trackerView?.updateTracker(PointF(0f, 0f), 0f, 0f)
+                    gimbalApi.stopGimbalControl(orientationListener)
+                    isMissing = true
+                }
             }
 
             override fun onNewItem(id: Int, face: Face) {
@@ -139,6 +143,7 @@ public class WidgetSoloLinkVideo : ApiListenerFragment() {
             }
 
             override fun onUpdate(detections: Detector.Detections<Face>, face: Face) {
+                isMissing = false
                 val faceWidth = face.getWidth()
                 val faceHeight = face.getHeight()
                 val facePos = face.getPosition() // Top-left position of the face.
