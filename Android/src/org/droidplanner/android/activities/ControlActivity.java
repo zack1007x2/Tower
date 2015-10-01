@@ -2,6 +2,7 @@ package org.droidplanner.android.activities;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.view.MenuItem;
 
 import org.droidplanner.android.R;
 import org.droidplanner.android.fragments.XmppControlFragment;
@@ -35,6 +36,15 @@ public class ControlActivity extends DrawerNavigationUI {
     @Override
     protected int getNavigationDrawerEntryId() {
         return R.id.navigation_account;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Pass the event to ActionBarDrawerToggle, if it returns
+        // true, then it has handled the app icon touch event
+
+
+        return super.onOptionsItemSelected(item);
     }
 
 
