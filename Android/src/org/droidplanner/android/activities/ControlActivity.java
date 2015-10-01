@@ -180,6 +180,7 @@ public class ControlActivity extends BaseActivity {
             public void run() {
                 Toast.makeText(ControlActivity.this, "XMPP LOGIN SUCCESS",
                         Toast.LENGTH_SHORT).show();
+
             }
         });
 

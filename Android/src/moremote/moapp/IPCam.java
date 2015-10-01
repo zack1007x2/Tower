@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
 import moremote.audioback.AudioBack;
 import moremote.audioback.AudioBackInterface;
@@ -538,7 +539,7 @@ public class IPCam {
             if(WIDTH!=0){
                 int ViewWidth = surfaceView.getWidth();
                 int ViewHeight = surfaceView.getWidth() * HEIGHT / WIDTH;
-                surfaceView.setLayoutParams(new LinearLayout.LayoutParams(ViewWidth, ViewHeight));
+                surfaceView.setLayoutParams(new RelativeLayout.LayoutParams(ViewWidth, ViewHeight));
                 surfaceView.getWidth();
             }
         }
