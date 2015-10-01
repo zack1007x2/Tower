@@ -106,6 +106,16 @@
                     android:drawableStart="@drawable/ic_edit_grey600_24dp"
                     android:text="@string/editor"/>
 
+
+                <TextView
+                    android:id="@+id/navigation_controler"
+                    style="@style/navigationDrawerEntry"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:drawableLeft="@drawable/ic_edit_grey600_24dp"
+                    android:drawableStart="@drawable/ic_edit_grey600_24dp"
+                    android:text="@string/control"/>
+
                 <TextView
                     android:id="@+id/navigation_locator"
                     style="@style/navigationDrawerEntry"

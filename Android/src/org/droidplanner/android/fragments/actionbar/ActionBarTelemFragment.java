@@ -27,13 +27,11 @@ import com.o3dr.services.android.lib.drone.property.VehicleMode;
 import com.o3dr.services.android.lib.util.MathUtils;
 
 import org.beyene.sius.unit.length.LengthUnit;
-import org.beyene.sius.unit.length.Meter;
 import org.droidplanner.android.R;
 import org.droidplanner.android.fragments.SettingsFragment;
 import org.droidplanner.android.fragments.helpers.ApiListenerFragment;
 import org.droidplanner.android.utils.analytics.GAUtils;
 import org.droidplanner.android.utils.prefs.DroidPlannerPrefs;
-import org.droidplanner.android.utils.unit.providers.length.LengthUnitProvider;
 import org.droidplanner.android.widgets.spinners.ModeAdapter;
 import org.droidplanner.android.widgets.spinners.SpinnerSelfSelect;
 
@@ -361,10 +359,10 @@ public class ActionBarTelemFragment extends ApiListenerFragment {
 
             switch(fixStatus){
                 case Gps.LOCK_3D:
-                case Gps.LOCK_3D_DGPS:
-                case Gps.LOCK_3D_RTK:
-                    gpsIcon = R.drawable.ic_gps_fixed_black_24dp;
-                    break;
+//                case Gps.LOCK_3D_DGPS:
+//                case Gps.LOCK_3D_RTK:
+//                    gpsIcon = R.drawable.ic_gps_fixed_black_24dp;
+//                    break;
 
                 case Gps.LOCK_2D:
                 case Gps.NO_FIX:

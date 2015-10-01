@@ -230,6 +230,8 @@ public abstract class DrawerNavigationUI extends SuperUI implements SlidingDrawe
 
         setupNavigationEntry(navDrawerEntryId, mNavViewsHolder.mEditor, new Intent(context, EditorActivity.class));
 
+        setupNavigationEntry(navDrawerEntryId, mNavViewsHolder.mControl, new Intent(context, ControlActivity.class));
+
         setupNavigationEntry(navDrawerEntryId, mNavViewsHolder.mLocator, new Intent(context, LocatorActivity.class));
 
         setupNavigationEntry(navDrawerEntryId, mNavViewsHolder.mSettings, new Intent(context, SettingsActivity.class));
@@ -323,6 +325,7 @@ public abstract class DrawerNavigationUI extends SuperUI implements SlidingDrawe
         final TextView mAccount;
         final TextView mFlightData;
         final TextView mEditor;
+        final TextView mControl;
         final TextView mLocator;
 
         final TextView mSettings;
@@ -335,6 +338,7 @@ public abstract class DrawerNavigationUI extends SuperUI implements SlidingDrawe
             mAccount = (TextView) containerView.findViewById(R.id.navigation_account);
             mFlightData = (TextView) containerView.findViewById(R.id.navigation_flight_data);
             mEditor = (TextView) containerView.findViewById(R.id.navigation_editor);
+            mControl = (TextView) containerView.findViewById(R.id.navigation_controler);
             mLocator = (TextView) containerView.findViewById(R.id.navigation_locator);
             mSettings = (TextView) containerView.findViewById(R.id.navigation_settings);
             mParams = (TextView) containerView.findViewById(R.id.navigation_params);

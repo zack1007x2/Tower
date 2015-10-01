@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+    <dimen name="size_370">740dp</dimen>
+    <dimen name="size_371">742dp</dimen>
+    <dimen name="size_372">744dp</dimen>
+    <dimen name="size_373">746dp</dimen>
+    <dimen name="size_374">748dp</dimen>
+    <dimen name="size_375">750dp</dimen>
+    <dimen name="size_376">752dp</dimen>
+    <dimen name="size_377">754dp</dimen>
+    <dimen name="size_378">756dp</dimen>
+    <dimen name="size_379">758dp</dimen>
+    <dimen name="size_380">760dp</dimen>
+    <dimen name="size_381">762dp</dimen>
+    <dimen name="size_382">764dp</dimen>
+    <dimen name="size_383">766dp</dimen>
+    <dimen name="size_384">768dp</dimen>
+    <dimen name="size_385">770dp</dimen>
+    <dimen name="size_386">772dp</dimen>
+    <dimen name="size_387">774dp</dimen>
+    <dimen name="size_388">776dp</dimen>
+    <dimen name="size_389">778dp</dimen>
+    <dimen name="size_390">780dp</dimen>
+    <dimen name="size_391">782dp</dimen>
+    <dimen name="size_392">784dp</dimen>
+    <dimen name="size_393">786dp</dimen>
+    <dimen name="size_394">788dp</dimen>
+    <dimen name="size_395">790dp</dimen>
+    <dimen name="size_396">792dp</dimen>
+    <dimen name="size_397">794dp</dimen>
+    <dimen name="size_398">796dp</dimen>
+    <dimen name="size_399">798dp</dimen>
+    <dimen name="size_400">800dp</dimen>
+</resources>

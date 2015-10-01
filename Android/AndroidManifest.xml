@@ -97,6 +97,10 @@
             android:launchMode="singleTop"
             android:label="@string/menu_drone_setup"/>
 
+        <activity android:name=".activities.ControlActivity"
+                  android:screenOrientation="userLandscape"
+                  android:label="@string/control"/>
+
         <activity
             android:name=".activities.SettingsActivity"
             android:launchMode="singleTop"
