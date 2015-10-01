@@ -6,11 +6,13 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.FragmentManager;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -28,15 +30,17 @@ import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import org.droidplanner.android.R;
 import org.droidplanner.android.fragments.DroneMap;
-import org.droidplanner.android.fragments.control.FlightControlManagerFragment;
 import org.droidplanner.android.fragments.FlightMapFragment;
 import org.droidplanner.android.fragments.TelemetryFragment;
+import org.droidplanner.android.fragments.control.FlightControlManagerFragment;
 import org.droidplanner.android.fragments.mode.FlightModePanel;
 import org.droidplanner.android.utils.prefs.AutoPanMode;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class FlightActivity extends DrawerNavigationUI {
+import moremote.moapp.activity.BaseActivity;
+
+public class FlightActivity extends BaseActivity {
 
     private static final String TAG = FlightActivity.class.getSimpleName();
     private static final int GOOGLE_PLAY_SERVICES_REQUEST_CODE = 101;
@@ -50,6 +54,12 @@ public class FlightActivity extends DrawerNavigationUI {
     private static final long WARNING_VIEW_DISPLAY_TIMEOUT = 10000l; //ms
 
     private static final IntentFilter eventFilter = new IntentFilter();
+
+    private String username;
+    private String password;
+    private SharedPreferences settings;
+    private static final String JID_FIELD = "jid";
+    private String resource;
 
     static {
         eventFilter.addAction(AttributeEvent.AUTOPILOT_ERROR);
@@ -304,6 +314,9 @@ public class FlightActivity extends DrawerNavigationUI {
 
         if (isActionDrawerOpened)
             openActionDrawer();
+
+        settings = getSharedPreferences(getResources().getString(R.string.app_title), 0);
+        login();
     }
 
     @Override
@@ -500,5 +513,40 @@ public class FlightActivity extends DrawerNavigationUI {
             warningView.setVisibility(View.VISIBLE);
             handler.postDelayed(hideWarningView, WARNING_VIEW_DISPLAY_TIMEOUT);
         }
+    }
+
+    private void login() {
+        username = getResources().getString(R.string.test_username);
+        password = getResources().getString(R.string.test_password);
+
+        settings.edit().putString(JID_FIELD, username).commit();
+
+        // login to xmpp server
+        resource = getMacAddress(this)+"AppName";
+        String xmppDomain = "xmpp01.moremote.com";
+        // xmppDomain set null if want use account domain
+        xmppConnection.loginToXMPPServer(username, password, xmppDomain, resource);
+    }
+
+    @Override
+    protected void xmppConnectionClosedOnError() {
+//        super.showConnectionCloseMsg(this);
+    }
+
+    @Override
+    protected void xmppAuthenticated() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(FlightActivity.this, "XMPP LOGIN SUCCESS",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    public static String getMacAddress(Context context) {
+        WifiManager wifiMan = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+        WifiInfo wifiInf = wifiMan.getConnectionInfo();
+        return wifiInf.getMacAddress();
     }
 }

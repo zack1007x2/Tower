@@ -1,13 +1,7 @@
 package org.droidplanner.android.activities;
 
 import android.annotation.SuppressLint;
-import android.app.AlertDialog;
-import android.content.Context;
-import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
@@ -21,13 +15,14 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import com.MAVLink.common.msg_set_mode;
+
 import org.droidplanner.android.R;
 import org.droidplanner.android.fragments.XmppControlFragment;
 import org.droidplanner.android.utils.prefs.DRONE_MODE;
 import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.MessageListener;
 import org.jivesoftware.smack.packet.Message;
-import org.jivesoftware.smack.packet.Presence;
 
 import java.net.MulticastSocket;
 import java.util.HashMap;
@@ -46,11 +41,7 @@ public class ControlActivity extends BaseActivity {
 
     private final static String TAG = AccountActivity.class.getSimpleName();
 
-    private static final String JID_FIELD = "jid";
-    private String username;
-    private String password;
-    private SharedPreferences settings;
-    private String resource;
+
     private String connectTo;
     private Spinner mSpinnerMode;
     private int cur_mode;
@@ -88,9 +79,8 @@ public class ControlActivity extends BaseActivity {
             droneShare = new XmppControlFragment();
             getSupportFragmentManager().beginTransaction().add(R.id.droneshare_control, droneShare).commit();
         }
-        settings = getSharedPreferences(getResources().getString(R.string.app_title), 0);
-        login();
         initView();
+        DoAfterSuccess();
     }
 
     private void initView() {
@@ -124,7 +114,8 @@ public class ControlActivity extends BaseActivity {
                         cur_mode = DRONE_MODE.MODE_AUTO;
                         break;
                 }
-                String Msg = MsgTitle + cur_mode;
+                String Msg = MsgTitle + msg_set_mode
+                        .MAVLINK_MSG_ID_SET_MODE+"@"+ cur_mode;
                 xmppConnection.sendMessage(connectTo, Msg);
 
 
@@ -155,37 +146,7 @@ public class ControlActivity extends BaseActivity {
     }
 
 
-    private void login() {
-        username = getResources().getString(R.string.test_username);
-        password = getResources().getString(R.string.test_password);
 
-        settings.edit().putString(JID_FIELD, username).commit();
-
-        // login to xmpp server
-        resource = getMacAddress(this)+"AppName";
-        String xmppDomain = "xmpp01.moremote.com";
-        // xmppDomain set null if want use account domain
-        xmppConnection.loginToXMPPServer(username, password, xmppDomain, resource);
-    }
-
-    @Override
-    protected void xmppConnectionClosedOnError() {
-//        super.showConnectionCloseMsg(this);
-    }
-
-    @Override
-    protected void xmppAuthenticated() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(ControlActivity.this, "XMPP LOGIN SUCCESS",
-                        Toast.LENGTH_SHORT).show();
-
-            }
-        });
-
-
-    }
 
     private void DoAfterSuccess(){
         createChat();
@@ -197,11 +158,7 @@ public class ControlActivity extends BaseActivity {
         connectedMap.put(connectTo, mainCam);
     }
 
-    public static String getMacAddress(Context context) {
-        WifiManager wifiMan = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-        WifiInfo wifiInf = wifiMan.getConnectionInfo();
-        return wifiInf.getMacAddress();
-    }
+
 
     private void createChat() {
         xmppMessageListener = new MessageListener() {
@@ -321,6 +278,9 @@ public class ControlActivity extends BaseActivity {
 //            Log.e("Ray","@#getCameraType in MainActivity");
 //            int cameraType = Integer.valueOf(content.split(":")[1]);
 //            this.cameraType = cameraType;
+        }else if(content.contains(MoApplication.XMPPCommand.DRONE)){
+//            Toast.makeText(ControlActivity.this, "Receive Msg => "+content,Toast.LENGTH_SHORT).show();
+            Log.d("Zack",content);
         }
     }
     private Handler alarmMsgHandler = new Handler(){
@@ -423,7 +383,7 @@ public class ControlActivity extends BaseActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.startstream:
-                DoAfterSuccess();
+
                 return true;
 
             default:
