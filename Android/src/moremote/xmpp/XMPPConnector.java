@@ -6,8 +6,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
-import moremote.moapp.wrap.UserStatus;
-
 import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.ChatManager;
 import org.jivesoftware.smack.ChatManagerListener;
@@ -34,6 +32,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+
+import moremote.moapp.wrap.UserStatus;
 
 /**
  * Created by lintzuhsiu on 14/10/21.

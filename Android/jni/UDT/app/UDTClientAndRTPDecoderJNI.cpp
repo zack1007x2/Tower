@@ -238,7 +238,7 @@ int getRtpData(uint8_t* tmpBuffer,int len, int decoderNumber){
 
 }
 
-JNIEXPORT jint Java_com_moremote_moapp_IPCam_getRtpData(JNIEnv *env, jobject obj, jbyteArray buf, jint len, jint decoderNumber){
+JNIEXPORT jint Java_moremote_moapp_IPCam_getRtpData(JNIEnv *env, jobject obj, jbyteArray buf, jint len, jint decoderNumber){
 
 uint8_t* tmpBuffer = (uint8_t*)env->GetByteArrayElements(buf, 0);
 
@@ -386,22 +386,22 @@ int startVideoDecode(int decoderNumber){
 	return 0;
 }
 
-JNIEXPORT void Java_com_moremote_moapp_IPCam_startupUDT(JNIEnv *env, jobject obj)
+JNIEXPORT void Java_moremote_moapp_IPCam_startupUDT(JNIEnv *env, jobject obj)
 {
 	UDT::startup();
 }
 
-JNIEXPORT void Java_com_moremote_moapp_IPCam_cleanupUDT(JNIEnv *env, jobject obj)
+JNIEXPORT void Java_moremote_moapp_IPCam_cleanupUDT(JNIEnv *env, jobject obj)
 {
 	UDT::cleanup();
 }
 
-JNIEXPORT void Java_com_moremote_moapp_IPCam_closeUDTSocket(JNIEnv *env, jobject obj, jint UDTFD)
+JNIEXPORT void Java_moremote_moapp_IPCam_closeUDTSocket(JNIEnv *env, jobject obj, jint UDTFD)
 {
 	UDT::close( (UDTSOCKET)UDTFD );
 }
 
-JNIEXPORT jint Java_com_moremote_moapp_IPCam_createUDTClient(JNIEnv *env, jobject obj, jint port, jstring serverip, jstring serverport){
+JNIEXPORT jint Java_moremote_moapp_IPCam_createUDTClient(JNIEnv *env, jobject obj, jint port, jstring serverip, jstring serverport){
 
 srand(time(NULL));
 
@@ -464,7 +464,7 @@ return (int)client;
 
 int* UDTSize = 0;
 char** UDTData;
-JNIEXPORT void Java_com_moremote_moapp_IPCam_initUDTPacket(JNIEnv *env, jobject obj, jint getUDTSize, jint decoderNumber)
+JNIEXPORT void Java_moremote_moapp_IPCam_initUDTPacket(JNIEnv *env, jobject obj, jint getUDTSize, jint decoderNumber)
 {
 
 	UDTSize[decoderNumber] = getUDTSize;
@@ -482,7 +482,7 @@ int getUDTLen(uint8_t* packet){
 	return len;
 }
 
-JNIEXPORT jint Java_com_moremote_moapp_IPCam_receiveUDTPacket(JNIEnv *env, jobject obj, jint UDTFD, jint decoderNumber) {
+JNIEXPORT jint Java_moremote_moapp_IPCam_receiveUDTPacket(JNIEnv *env, jobject obj, jint UDTFD, jint decoderNumber) {
 UDTSOCKET UDTClientFD = (UDTSOCKET)UDTFD;
 
 //	int nSize = sizeof(struct packet_info);
@@ -539,7 +539,7 @@ bool sendUDTPacket(UDTSOCKET UDTClientFD, char* data, int size)
 	return (ssize<size);
 }
 
-JNIEXPORT jboolean Java_com_moremote_moapp_IPCam_sendByUDT( JNIEnv* env, jobject obj, jint UDTFD, jbyteArray buff, jint buffLen)
+JNIEXPORT jboolean Java_moremote_moapp_IPCam_sendByUDT( JNIEnv* env, jobject obj, jint UDTFD, jbyteArray buff, jint buffLen)
 {
 signed char* pBuff=env->GetByteArrayElements(buff,NULL);
 bool ret = sendUDTPacket( (UDTSOCKET)UDTFD, (char*)pBuff, buffLen );
@@ -549,7 +549,7 @@ return ret;
 
 /*-------------------------------- UDT END------------------------------------------*/
 
-JNIEXPORT void Java_com_moremote_moapp_IPCam_getVideoFromC(JNIEnv *env, jobject obj, jint decoderNumber, jobject buffer_Y, jobject buffer_U, jobject buffer_V ){
+JNIEXPORT void Java_moremote_moapp_IPCam_getVideoFromC(JNIEnv *env, jobject obj, jint decoderNumber, jobject buffer_Y, jobject buffer_U, jobject buffer_V ){
 	uint8_t *tmpBuffer;
 
 	uint8_t *buf_Y = (uint8_t*)env->GetDirectBufferAddress(buffer_Y);
@@ -561,27 +561,27 @@ JNIEXPORT void Java_com_moremote_moapp_IPCam_getVideoFromC(JNIEnv *env, jobject 
 	uint8_t *buf_V = (uint8_t*)env->GetDirectBufferAddress(buffer_V);
 	memcpy(buf_V, videoFrame[decoderNumber]->data[2], numBytesV[decoderNumber]);
 }
-JNIEXPORT jint Java_com_moremote_moapp_IPCam_getVideoWidth( JNIEnv* env, jobject obj, jint decoderNumber)
+JNIEXPORT jint Java_moremote_moapp_IPCam_getVideoWidth( JNIEnv* env, jobject obj, jint decoderNumber)
 {
 return videoCodecCtx[decoderNumber]->width;
 }
-JNIEXPORT jint Java_com_moremote_moapp_IPCam_getVideoHeight( JNIEnv* env, jobject obj, jint decoderNumber)
+JNIEXPORT jint Java_moremote_moapp_IPCam_getVideoHeight( JNIEnv* env, jobject obj, jint decoderNumber)
 {
 return videoCodecCtx[decoderNumber]->height;
 }
-JNIEXPORT jint Java_com_moremote_moapp_IPCam_getAudioSize( JNIEnv* env)
+JNIEXPORT jint Java_moremote_moapp_IPCam_getAudioSize( JNIEnv* env)
 {
 return audioSize;
 }
-JNIEXPORT void Java_com_moremote_moapp_IPCam_getAudioFromC( JNIEnv* env, jobject obj, jobject audioBuffer, jint decoderNumber)
+JNIEXPORT void Java_moremote_moapp_IPCam_getAudioFromC( JNIEnv* env, jobject obj, jobject audioBuffer, jint decoderNumber)
 {
 	uint8_t *audio = (uint8_t*)env->GetDirectBufferAddress(audioBuffer);
 	memcpy(audio, audioData[decoderNumber], audioSize);
 }
-JNIEXPORT void Java_com_moremote_moapp_IPCam_setAudioSampleRate(JNIEnv *env, jobject obj, jint audioPlayerSamplerate){
+JNIEXPORT void Java_moremote_moapp_IPCam_setAudioSampleRate(JNIEnv *env, jobject obj, jint audioPlayerSamplerate){
 	audioSamprate = audioPlayerSamplerate;
 }
-JNIEXPORT jint Java_com_moremote_moapp_IPCam_signDecoder(JNIEnv *env, jobject obj, jint decoderNumber){
+JNIEXPORT jint Java_moremote_moapp_IPCam_signDecoder(JNIEnv *env, jobject obj, jint decoderNumber){
 
 LOGE("alreadySign[%d]=%d",decoderNumber,alreadySign[decoderNumber]);
 if(alreadySign[decoderNumber] == 1){
@@ -611,7 +611,7 @@ alreadySign[decoderNumber] = 1;
 LOGE("codec ready %d !@",decoderNumber);
 }
 
-JNIEXPORT void Java_com_moremote_moapp_activity_RemoteControlActivity_DecoderInitial(JNIEnv *env)
+JNIEXPORT void Java_org_droidplanner_android_activities_ControlActivity_DecoderInitial(JNIEnv *env)
 {
 	audioData = (uint8_t**)malloc(sizeof(uint8_t*)*10);
 

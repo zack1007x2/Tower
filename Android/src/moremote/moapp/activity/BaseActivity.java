@@ -1,11 +1,12 @@
 package moremote.moapp.activity;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 
+import org.droidplanner.android.DroidPlannerApp;
+import org.droidplanner.android.activities.DrawerNavigationUI;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.RosterListener;
 import org.jivesoftware.smack.XMPPConnection;
@@ -13,13 +14,12 @@ import org.jivesoftware.smack.packet.Presence;
 
 import java.util.Collection;
 
-import moremote.moapp.MoApplication;
 import moremote.xmpp.XMPPConnector;
 
 /**
  * Created by lintzuhsiu on 15/3/24.
  */
-public class BaseActivity extends Activity {
+public class BaseActivity extends DrawerNavigationUI {
 
     protected XMPPConnector xmppConnection;
     protected AlertDialog dialog;
@@ -73,14 +73,24 @@ public class BaseActivity extends Activity {
     };
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        MoApplication application = (MoApplication) getApplication();
+        DroidPlannerApp application = (DroidPlannerApp) getApplication();
         xmppConnection = application.getXmppConnector();
 
         xmppConnection.addRosterListener(rosterListener);
         xmppConnection.addConnectionListener(connectionListener);
+    }
+
+    @Override
+    protected int getToolbarId() {
+        return 0;
+    }
+
+    @Override
+    protected int getNavigationDrawerEntryId() {
+        return 0;
     }
 
     protected void showConnectionCloseMsg(final Context context) {

@@ -81,7 +81,8 @@ public class IPCam {
     private TCPClient tcpClient = null;
     private RelayClient relayClient = null;
     private StopStreamWaitAsyncTask stopStreamAsyncTask;
-    private Button btn_play, btn_audioback;
+    private Button btn_play;
+    private Button btn_audioback;
     private StunAsyncTask stunAsyncTask;
     private XMPPConnector xmppConnector;
     private Handler toastHandler;
@@ -110,7 +111,7 @@ public class IPCam {
     }
 
     public void setAudioBackButton(Button btn_audioback){
-        this.btn_audioback = btn_audioback;
+//        this.btn_audioback = btn_audioback;
 
         defineAudioBackInterface();
 
@@ -135,7 +136,7 @@ public class IPCam {
                 }
                 switch (connectionType){
 
-                    case MoApplication.ConnectionType.P2P_LAN_TCP:
+                    case MoApplication.ConnectingType.P2P_LAN_TCP:
                         if (tcpClient != null && tcpClient.isConnection()) {
                             if(cameraType == MoApplication.cameraType.AndroidCam) {
                                 tcpClient.send(len, 2);
@@ -145,7 +146,7 @@ public class IPCam {
                         }
                         return true;
 //                        break;
-                    case MoApplication.ConnectionType.P2P_WAN_UDT:
+                    case MoApplication.ConnectingType.P2P_WAN_UDT:
                         if (UDTClientFD != -1) {
                             if(cameraType == MoApplication.cameraType.AndroidCam) {
                                 byte[] data2 = new byte[500];
@@ -167,7 +168,7 @@ public class IPCam {
                         }
                         return true;
 //                        break;
-                    case MoApplication.ConnectionType.RELAY:
+                    case MoApplication.ConnectingType.RELAY:
                         if (relayClient != null) {
                             if(cameraType == MoApplication.cameraType.AndroidCam) {
                                 relayClient.send(len, 2);
@@ -177,7 +178,7 @@ public class IPCam {
                         }
                         return true;
 //                        break;
-                    case MoApplication.ConnectionType.NONE:
+                    case MoApplication.ConnectingType.NONE:
                         Log.e("audioBack", "not Connection");
                         return false;
 //                        break;
@@ -192,13 +193,13 @@ public class IPCam {
         if(recording){
             audioBack = new AudioBack(this, audioBackInterface);
             audioBack.start();
-            btn_audioback.setText("StopAudioBack");
+//            btn_audioback.setText("StopAudioBack");
         }
         else if(audioBack != null){
             audioBack.interrupt();
             audioBack.release();
             audioBack = null;
-            btn_audioback.setText("StartAudioBack");
+//            btn_audioback.setText("StartAudioBack");
         }
         isRecording = recording;
 
@@ -281,13 +282,13 @@ public class IPCam {
 
 
                 if (connectionType == StunAsyncTask.NetWorkType.LAN) {
-                    connectionType = MoApplication.ConnectionType.P2P_LAN_TCP;
+                    connectionType = MoApplication.ConnectingType.P2P_LAN_TCP;
                     Log.e("Ray", "connectionType: localTCP");
                     Log.e(TAG, "@@ stunMsgHandler " + destinationIP + ":" + destinationPort);
                     xmppConnector.sendMessage(jid, MoApplication.XMPPCommand.ASK_TCP);
                 }
                 else {
-                    connectionType = MoApplication.ConnectionType.P2P_WAN_UDT;
+                    connectionType = MoApplication.ConnectingType.P2P_WAN_UDT;
                     Log.e("Ray", "connectionType: UDT");
                     toast("WAN");
                     Log.e("", "stun for streaming success!! go UDT + " + socket.getLocalPort());
@@ -309,11 +310,11 @@ public class IPCam {
                 boolean receiveXmppMessage = extras.getBoolean("receiveXmppMessage");
                 if(receiveXmppMessage) {
                     toast("Relay");
-                    connectionType = MoApplication.ConnectionType.RELAY;
+                    connectionType = MoApplication.ConnectingType.RELAY;
                     xmppConnector.sendMessage(jid, MoApplication.XMPPCommand.ASK_RELAY);
                 }
                 else{
-                    connectionType = MoApplication.ConnectionType.NONE;
+                    connectionType = MoApplication.ConnectingType.NONE;
                     toast("Camera not exist: "+jid);
                 }
             }
@@ -328,8 +329,8 @@ public class IPCam {
             btn_play.setText("Stop Streaming");
             btn_play.setEnabled(true);
 
-            if(isMainCam)
-                btn_audioback.setEnabled(true);
+//            if(isMainCam)
+//                btn_audioback.setEnabled(true);
         }
     };
 
@@ -386,7 +387,7 @@ public class IPCam {
                 else {
                     if(isMainCam) {
                         Log.e("Ray", "audiobackStop!!");
-                        btn_audioback.setEnabled(false);
+//                        btn_audioback.setEnabled(false);
                         audioBackState(false);
 //                        audioBackStopHandler.sendEmptyMessage(0);
                     }

@@ -1,6 +1,5 @@
 package org.droidplanner.android;
 
-import android.app.Application;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -34,9 +33,10 @@ import org.droidplanner.android.utils.prefs.DroidPlannerPrefs;
 import java.util.ArrayList;
 import java.util.List;
 
+import moremote.moapp.MoApplication;
 import timber.log.Timber;
 
-public class DroidPlannerApp extends Application implements DroneListener, TowerListener {
+public class DroidPlannerApp extends MoApplication implements DroneListener, TowerListener {
 
     private static final long DELAY_TO_DISCONNECTION = 1000l; // ms
 

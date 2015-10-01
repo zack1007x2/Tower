@@ -2,14 +2,14 @@ package moremote.moapp;
 
 import android.app.Application;
 
-import moremote.p2p.ITCPRelayLibrary;
-import moremote.xmpp.XMPPConnector;
-
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
+
+import moremote.p2p.ITCPRelayLibrary;
+import moremote.xmpp.XMPPConnector;
 
 /**
  * Created by lintzuhsiu on 14/11/6.
@@ -49,9 +49,10 @@ public class MoApplication extends Application {
         public static final String ALARM_BABY       = "alarm_baby:";
         public static final String ALARM_SOUND      = "alarm_sound:";
         public static final String CAMERA_TYPE      = "camera_type:";
+        public static final String DRONE            = "drone:";
     }
 	
-	public static class ConnectionType {
+	public static class ConnectingType {
         public static final int NONE = -1;
 		public static final int P2P_WAN_UDT = 0;
 		public static final int P2P_LAN_TCP = 1;
