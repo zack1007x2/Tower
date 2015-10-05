@@ -15,9 +15,13 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Parser;
+import com.MAVLink.common.msg_attitude;
 import com.MAVLink.common.msg_set_mode;
 
 import org.droidplanner.android.R;
+import org.droidplanner.android.data.DroneModel;
 import org.droidplanner.android.fragments.XmppControlFragment;
 import org.droidplanner.android.utils.prefs.DRONE_MODE;
 import org.jivesoftware.smack.Chat;
@@ -25,6 +29,10 @@ import org.jivesoftware.smack.MessageListener;
 import org.jivesoftware.smack.packet.Message;
 
 import java.net.MulticastSocket;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.util.HashMap;
 
 import moremote.moapp.IPCam;
@@ -281,8 +289,46 @@ public class ControlActivity extends BaseActivity {
         }else if(content.contains(MoApplication.XMPPCommand.DRONE)){
 //            Toast.makeText(ControlActivity.this, "Receive Msg => "+content,Toast.LENGTH_SHORT).show();
             Log.d("Zack",content);
+            content = content.substring(17);
+            Log.d("Zack", content);
+            if(content.contains("[")) {
+                String[] byteValues = content.substring(1, content.length() - 1).split(",");
+                byte[] bytes = new byte[byteValues.length];
+
+                for (int i = 0, len = bytes.length; i < len; i++) {
+                    bytes[i] = Byte.parseByte(byteValues[i].trim());
+                }
+                Parser drone_parser = new Parser();
+                ByteBuffer tmpBtyrBuffer = ByteBuffer.allocate(bytes.length);
+                tmpBtyrBuffer.put(bytes);
+                for (int i = 0; i < tmpBtyrBuffer.limit(); i++) {
+                    MAVLinkPacket pkt = drone_parser.mavlink_parse_char(tmpBtyrBuffer.get(i) &
+                            0x00ff);
+                    if(pkt!=null){
+                        handlePacket(pkt);
+
+                    }
+
+                }
+            }
         }
     }
+
+    private void handlePacket(MAVLinkPacket pkt) {
+        int msgId = pkt.unpack().msgid;
+        DroneModel mDroneModel = DroneModel.getDroneModel();
+        switch(msgId){
+
+            case msg_attitude.MAVLINK_MSG_ID_ATTITUDE:
+                msg_attitude msg = (msg_attitude) pkt.unpack();
+                mDroneModel.setRoll(msg.roll);
+
+                break;
+
+        }
+
+    }
+
     private Handler alarmMsgHandler = new Handler(){
         public void handleMessage(android.os.Message msg){
             super.handleMessage(msg);
@@ -389,6 +435,15 @@ public class ControlActivity extends BaseActivity {
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    public static ByteBuffer str_to_bb(String msg){
+        Charset charset = Charset.forName("UTF-8");
+        CharsetEncoder encoder = charset.newEncoder();
+        try{
+            return encoder.encode(CharBuffer.wrap(msg));
+        }catch(Exception e){e.printStackTrace();}
+        return null;
     }
 
 }
