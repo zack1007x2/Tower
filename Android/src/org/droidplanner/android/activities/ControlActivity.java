@@ -105,7 +105,6 @@ public class ControlActivity extends BaseActivity {
         mSpinnerMode.setAdapter(ModeItem);
 
         mSpinnerMode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 switch (position) {
@@ -125,8 +124,6 @@ public class ControlActivity extends BaseActivity {
                 String Msg = MsgTitle + msg_set_mode
                         .MAVLINK_MSG_ID_SET_MODE+"@"+ cur_mode;
                 xmppConnection.sendMessage(connectTo, Msg);
-
-
             }
 
             @Override
@@ -288,9 +285,7 @@ public class ControlActivity extends BaseActivity {
 //            this.cameraType = cameraType;
         }else if(content.contains(MoApplication.XMPPCommand.DRONE)){
 //            Toast.makeText(ControlActivity.this, "Receive Msg => "+content,Toast.LENGTH_SHORT).show();
-            Log.d("Zack",content);
             content = content.substring(17);
-            Log.d("Zack", content);
             if(content.contains("[")) {
                 String[] byteValues = content.substring(1, content.length() - 1).split(",");
                 byte[] bytes = new byte[byteValues.length];

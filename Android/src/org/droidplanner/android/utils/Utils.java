@@ -50,4 +50,9 @@ public class Utils {
 
 	//Private constructor to prevent instantiation.
 	private Utils(){}
+
+
+	public static float fromRadToDeg(float rad) {
+		return (float) (rad * 180f / Math.PI);
+	}
 }

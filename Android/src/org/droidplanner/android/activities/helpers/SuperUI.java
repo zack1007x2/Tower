@@ -16,17 +16,13 @@ import android.view.MenuItem;
 import com.o3dr.android.client.Drone;
 import com.o3dr.android.client.apis.drone.DroneStateApi;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
-import com.o3dr.services.android.lib.drone.attribute.AttributeType;
-import com.o3dr.services.android.lib.drone.property.Type;
-import com.o3dr.services.android.lib.drone.property.VehicleMode;
 
 import org.droidplanner.android.DroidPlannerApp;
 import org.droidplanner.android.R;
+import org.droidplanner.android.data.DroneModel;
 import org.droidplanner.android.dialogs.SlideToUnlockDialog;
 import org.droidplanner.android.dialogs.SupportYesNoDialog;
 import org.droidplanner.android.dialogs.SupportYesNoWithPrefsDialog;
-import org.droidplanner.android.dialogs.YesNoDialog;
-import org.droidplanner.android.dialogs.YesNoWithPrefsDialog;
 import org.droidplanner.android.fragments.SettingsFragment;
 import org.droidplanner.android.proxy.mission.MissionProxy;
 import org.droidplanner.android.utils.Utils;
@@ -39,7 +35,10 @@ import org.droidplanner.android.utils.unit.systems.UnitSystem;
  */
 public abstract class SuperUI extends AppCompatActivity implements DroidPlannerApp.ApiListener {
 
+
     private static final IntentFilter superIntentFilter = new IntentFilter();
+
+    public DroneModel mDroneModel;
 
     static {
         superIntentFilter.addAction(AttributeEvent.STATE_CONNECTED);
@@ -104,6 +103,8 @@ public abstract class SuperUI extends AppCompatActivity implements DroidPlannerA
 
         screenOrientation.unlock();
         Utils.updateUILanguage(context);
+
+        mDroneModel = DroneModel.getDroneModel();
     }
 
     @Override

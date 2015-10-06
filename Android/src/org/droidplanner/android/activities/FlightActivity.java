@@ -1,5 +1,6 @@
 package org.droidplanner.android.activities;
 
+import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -13,6 +14,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.FragmentManager;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -20,6 +22,10 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.MAVLink.MAVLinkPacket;
+import com.MAVLink.Parser;
+import com.MAVLink.common.msg_attitude;
+import com.MAVLink.common.msg_vfr_hud;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.o3dr.android.client.Drone;
@@ -34,10 +40,17 @@ import org.droidplanner.android.fragments.FlightMapFragment;
 import org.droidplanner.android.fragments.TelemetryFragment;
 import org.droidplanner.android.fragments.control.FlightControlManagerFragment;
 import org.droidplanner.android.fragments.mode.FlightModePanel;
+import org.droidplanner.android.utils.Utils;
+import org.droidplanner.android.utils.collection.BroadCastIntent;
 import org.droidplanner.android.utils.prefs.AutoPanMode;
+import org.jivesoftware.smack.Chat;
+import org.jivesoftware.smack.MessageListener;
+import org.jivesoftware.smack.packet.Message;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import moremote.moapp.MoApplication;
 import moremote.moapp.activity.BaseActivity;
 
 public class FlightActivity extends BaseActivity {
@@ -61,6 +74,9 @@ public class FlightActivity extends BaseActivity {
     private static final String JID_FIELD = "jid";
     private String resource;
 
+    private MessageListener xmppMessageListener;
+
+
     static {
         eventFilter.addAction(AttributeEvent.AUTOPILOT_ERROR);
         eventFilter.addAction(AttributeEvent.STATE_ARMING);
@@ -69,6 +85,7 @@ public class FlightActivity extends BaseActivity {
         eventFilter.addAction(AttributeEvent.STATE_UPDATED);
         eventFilter.addAction(AttributeEvent.FOLLOW_START);
         eventFilter.addAction(AttributeEvent.MISSION_DRONIE_CREATED);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_ATTITUDE);
     }
 
     private final BroadcastReceiver eventReceiver = new BroadcastReceiver() {
@@ -102,6 +119,7 @@ public class FlightActivity extends BaseActivity {
                     if (dronieBearing != -1)
                         updateMapBearing(dronieBearing);
                     break;
+
             }
         }
     };
@@ -169,7 +187,7 @@ public class FlightActivity extends BaseActivity {
     public void onDrawerClosed() {
         super.onDrawerClosed();
 
-        if(actionDrawerToggle != null)
+        if (actionDrawerToggle != null)
             actionDrawerToggle.setActivated(false);
 
         if (telemetryFragment == null)
@@ -186,7 +204,7 @@ public class FlightActivity extends BaseActivity {
     public void onDrawerOpened() {
         super.onDrawerOpened();
 
-        if(actionDrawerToggle != null)
+        if (actionDrawerToggle != null)
             actionDrawerToggle.setActivated(true);
 
         if (telemetryFragment == null)
@@ -423,15 +441,15 @@ public class FlightActivity extends BaseActivity {
         }
     }
 
-    public void setGuidedClickListener(FlightMapFragment.OnGuidedClickListener listener){
+    public void setGuidedClickListener(FlightMapFragment.OnGuidedClickListener listener) {
         mapFragment.setGuidedClickListener(listener);
     }
 
-    public void addMapMarkerProvider(DroneMap.MapMarkerProvider provider){
+    public void addMapMarkerProvider(DroneMap.MapMarkerProvider provider) {
         mapFragment.addMapMarkerProvider(provider);
     }
 
-    public void removeMapMarkerProvider(DroneMap.MapMarkerProvider provider){
+    public void removeMapMarkerProvider(DroneMap.MapMarkerProvider provider) {
         mapFragment.removeMapMarkerProvider(provider);
     }
 
@@ -492,11 +510,11 @@ public class FlightActivity extends BaseActivity {
     }
 
     private void onAutopilotError(ErrorType errorType) {
-        if(errorType == null)
+        if (errorType == null)
             return;
 
         final CharSequence errorLabel;
-        switch(errorType){
+        switch (errorType) {
             case NO_ERROR:
                 errorLabel = null;
                 break;
@@ -506,7 +524,7 @@ public class FlightActivity extends BaseActivity {
                 break;
         }
 
-        if(!TextUtils.isEmpty(errorLabel)) {
+        if (!TextUtils.isEmpty(errorLabel)) {
             handler.removeCallbacks(hideWarningView);
 
             warningView.setText(errorLabel);
@@ -522,7 +540,7 @@ public class FlightActivity extends BaseActivity {
         settings.edit().putString(JID_FIELD, username).commit();
 
         // login to xmpp server
-        resource = getMacAddress(this)+"AppName";
+        resource = getMacAddress(this) + "AppName";
         String xmppDomain = "xmpp01.moremote.com";
         // xmppDomain set null if want use account domain
         xmppConnection.loginToXMPPServer(username, password, xmppDomain, resource);
@@ -535,6 +553,7 @@ public class FlightActivity extends BaseActivity {
 
     @Override
     protected void xmppAuthenticated() {
+        createChat();
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -549,4 +568,101 @@ public class FlightActivity extends BaseActivity {
         WifiInfo wifiInf = wifiMan.getConnectionInfo();
         return wifiInf.getMacAddress();
     }
+
+    private void createChat() {
+        xmppMessageListener = new MessageListener() {
+            @Override
+            public void processMessage(Chat chat, final Message message) {
+                receiveXMPPMessage(chat, message);
+            }
+        };
+        xmppConnection.addMessageListener(xmppMessageListener);
+    }
+
+
+    private void receiveXMPPMessage(Chat chat, final Message message) {
+        String content = message.getBody();
+        Log.e("Ray", "receive XmppMessage from " + chat.getParticipant());
+        if (content == null) {
+            return;
+        }
+
+        if (content.contains(MoApplication.XMPPCommand.RELAY) && content.length() < 64) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(FlightActivity.this, "auth or secret error", Toast.LENGTH_LONG).show();
+//                    ((Button) findViewById(R.id.streaming)).setEnabled(true);
+                }
+            });
+            return;
+        } else if (content.contains(MoApplication.XMPPCommand.DRONE)) {
+            Parser drone_parser = new Parser();
+            String[] pktArr = content.split(MoApplication.XMPPCommand.DRONE + "@FROM_DRONE");
+            for (int i = 0; i < pktArr.length; i++) {
+                if (pktArr[i].contains("[")) {
+                    ByteBuffer pktBuffer = StringToByteBuffer(pktArr[i]);
+                    for (int j = 0; j < pktBuffer.limit(); j++) {
+                        MAVLinkPacket pkt = drone_parser.mavlink_parse_char(pktBuffer.get(j) &
+                                0x00ff);
+                        if (pkt != null) {
+                            handlePacket(pkt);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private ByteBuffer StringToByteBuffer(String content) {
+        String[] byteValues = content.substring(1, content.length() - 1).split(",");
+        byte[] bytes = new byte[byteValues.length];
+
+        for (int j = 0, len = bytes.length; j < len; j++) {
+            bytes[j] = Byte.parseByte(byteValues[j].trim());
+        }
+
+        ByteBuffer tmpBtyrBuffer = ByteBuffer.allocate(bytes.length);
+        tmpBtyrBuffer.put(bytes);
+        return tmpBtyrBuffer;
+    }
+
+    private void handlePacket(MAVLinkPacket pkt) {
+        int msgId = pkt.unpack().msgid;
+        Intent i = new Intent();
+        switch (msgId) {
+            case msg_attitude.MAVLINK_MSG_ID_ATTITUDE:
+                msg_attitude msg_atti = (msg_attitude) pkt.unpack();
+                mDroneModel.setRoll(Utils.fromRadToDeg(msg_atti.roll));
+                mDroneModel.setRollspeed(Utils.fromRadToDeg(msg_atti.rollspeed));
+                mDroneModel.setPitch(Utils.fromRadToDeg(msg_atti.pitch));
+                mDroneModel.setPitchspeed(Utils.fromRadToDeg(msg_atti.pitchspeed));
+                mDroneModel.setYaw(Utils.fromRadToDeg(msg_atti.yaw));
+                mDroneModel.setYawspeed(Utils.fromRadToDeg(msg_atti.yawspeed));
+                mDroneModel.setTime_boot_ms(msg_atti.time_boot_ms);
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_ATTITUDE);
+                break;
+            case msg_vfr_hud.MAVLINK_MSG_ID_VFR_HUD:
+                msg_vfr_hud msg_speed = (msg_vfr_hud) pkt.unpack();
+                mDroneModel.setAirSpeed(msg_speed.airspeed);
+                mDroneModel.setGroundSpeed(msg_speed.groundspeed);
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_SPEED);
+                break;
+
+        }
+        sendBroadcast(i);
+    }
+
+    @SuppressLint("NewApi")
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.e(TAG, "onDestroy");
+        if (xmppMessageListener != null) {
+            xmppConnection.removeMessageListener(xmppMessageListener);
+            xmppMessageListener = null;
+        }
+
+    }
+
 }

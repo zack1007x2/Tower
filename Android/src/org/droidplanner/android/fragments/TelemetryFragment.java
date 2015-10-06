@@ -10,7 +10,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.util.TypedValue;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,7 +27,10 @@ import com.o3dr.services.android.lib.drone.property.Speed;
 
 import org.beyene.sius.unit.length.LengthUnit;
 import org.droidplanner.android.R;
+import org.droidplanner.android.activities.helpers.SuperUI;
+import org.droidplanner.android.data.DroneModel;
 import org.droidplanner.android.fragments.helpers.ApiListenerFragment;
+import org.droidplanner.android.utils.collection.BroadCastIntent;
 import org.droidplanner.android.utils.unit.providers.speed.SpeedUnitProvider;
 import org.droidplanner.android.widgets.AttitudeIndicator;
 
@@ -40,6 +43,7 @@ public class TelemetryFragment extends ApiListenerFragment {
         eventFilter.addAction(AttributeEvent.SPEED_UPDATED);
         eventFilter.addAction(AttributeEvent.ALTITUDE_UPDATED);
         eventFilter.addAction(AttributeEvent.STATE_UPDATED);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_ATTITUDE);
     }
 
     /**
@@ -73,9 +77,22 @@ public class TelemetryFragment extends ApiListenerFragment {
                 case AttributeEvent.STATE_UPDATED:
                     updateFlightTimer();
                     break;
+
+                case BroadCastIntent.PROPERTY_DRONE_ATTITUDE:
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            onOrientationUpdate(((SuperUI) getActivity()).mDroneModel);
+                        }
+                    });
+                    break;
+                case BroadCastIntent.PROPERTY_DRONE_SPEED:
+                    onOrientationUpdate(((SuperUI) getActivity()).mDroneModel);
+                    break;
             }
         }
     };
+
 
     /**
      * Runnable used to update the drone flight time.
@@ -207,6 +224,7 @@ public class TelemetryFragment extends ApiListenerFragment {
             y = 360 + y;
         }
 
+        Log.d("Zack",r+"@"+p+"@"+y);
         attitudeIndicator.setAttitude(r, p, y);
 
         roll.setText(String.format("%3.0f\u00B0", r));
@@ -232,5 +250,49 @@ public class TelemetryFragment extends ApiListenerFragment {
 
             this.altitude.setText(altUnit.toString());
         }
+    }
+
+    public void onOrientationUpdate(DroneModel drone) {
+        if (drone == null)
+            return;
+
+        float r = (float) drone.getRoll();
+        float p = (float) drone.getPitch();
+        float y = (float) drone.getYaw();
+
+        if (!headingModeFPV & y < 0) {
+            y = 360 + y;
+        }
+
+        attitudeIndicator.setAttitude(r, p, y);
+
+        roll.setText(String.format("%3.0f\u00B0", r));
+        pitch.setText(String.format("%3.0f\u00B0", p));
+        yaw.setText(String.format("%3.0f\u00B0", y));
+
+    }
+
+    private void onSpeedUpdate(DroneModel drone) {
+        if (drone != null) {
+            final SpeedUnitProvider speedUnitProvider = getSpeedUnitProvider();
+
+            airSpeed.setText(speedUnitProvider.boxBaseValueToTarget(drone.getAirSpeed()).toString());
+            groundSpeed.setText(speedUnitProvider.boxBaseValueToTarget(drone.getGroundSpeed()).toString());
+            climbRate.setText(speedUnitProvider.boxBaseValueToTarget(drone.getVerticalSpeed()).toString());
+        }
+    }
+
+
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        getActivity().registerReceiver(eventReceiver, eventFilter);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        getActivity().unregisterReceiver(eventReceiver);
     }
 }
