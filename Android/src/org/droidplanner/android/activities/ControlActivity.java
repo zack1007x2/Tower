@@ -18,6 +18,7 @@ import android.widget.Toast;
 import com.MAVLink.MAVLinkPacket;
 import com.MAVLink.Parser;
 import com.MAVLink.common.msg_attitude;
+import com.MAVLink.common.msg_heartbeat;
 import com.MAVLink.common.msg_set_mode;
 
 import org.droidplanner.android.R;
@@ -34,6 +35,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.util.HashMap;
+import java.util.Map;
 
 import moremote.moapp.IPCam;
 import moremote.moapp.MoApplication;
@@ -52,7 +54,7 @@ public class ControlActivity extends BaseActivity {
 
     private String connectTo;
     private Spinner mSpinnerMode;
-    private int cur_mode;
+    private int cur_mode = 0;
     private String MsgTitle = MoApplication.XMPPCommand.DRONE;
 
     private MessageListener xmppMessageListener;
@@ -94,11 +96,10 @@ public class ControlActivity extends BaseActivity {
     private void initView() {
         connectTo = getResources().getString(R.string.connect_to);
 
-
-
         mSpinnerMode = (Spinner)findViewById(R.id.spinnerMode);
         bt_streaming = (Button)findViewById(R.id.bt_streaming);
-        String[] modes = { "Stable", "Land", "Loiter", "Auto" };
+        String[] modes = {"Stabilize", "Acro", "Alt Hold", "Auto","Guided","Loiter","RTL",
+                "Circle","Land","Drift","Sport","Flip","Autotune", "PosHold", "Brake"};
         ArrayAdapter<String> ModeItem = new ArrayAdapter<String>(this, android.R.layout
                 .simple_spinner_item, modes);
         ModeItem.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -107,20 +108,7 @@ public class ControlActivity extends BaseActivity {
         mSpinnerMode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                switch (position) {
-                    case 0:
-                        cur_mode = DRONE_MODE.MODE_STABLE;
-                        break;
-                    case 1:
-                        cur_mode = DRONE_MODE.MODE_LAND;
-                        break;
-                    case 2:
-                        cur_mode = DRONE_MODE.MODE_LOITER;
-                        break;
-                    case 3:
-                        cur_mode = DRONE_MODE.MODE_AUTO;
-                        break;
-                }
+                cur_mode = (int) DRONE_MODE.getDronePositionMap().getKey(position);
                 String Msg = MsgTitle + msg_set_mode
                         .MAVLINK_MSG_ID_SET_MODE+"@"+ cur_mode;
                 xmppConnection.sendMessage(connectTo, Msg);
@@ -317,7 +305,10 @@ public class ControlActivity extends BaseActivity {
             case msg_attitude.MAVLINK_MSG_ID_ATTITUDE:
                 msg_attitude msg = (msg_attitude) pkt.unpack();
                 mDroneModel.setRoll(msg.roll);
-
+            case msg_heartbeat.MAVLINK_MSG_ID_HEARTBEAT:
+                msg_heartbeat msgMode = (msg_heartbeat) pkt.unpack();
+                mSpinnerMode.setSelection((Integer) DRONE_MODE.getDronePositionMap().getValue(msgMode
+                        .custom_mode));
                 break;
 
         }

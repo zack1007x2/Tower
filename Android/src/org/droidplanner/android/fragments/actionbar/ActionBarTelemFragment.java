@@ -30,6 +30,8 @@ import org.beyene.sius.unit.length.LengthUnit;
 import org.droidplanner.android.R;
 import org.droidplanner.android.activities.helpers.SuperUI;
 import org.droidplanner.android.data.DroneModel;
+import org.droidplanner.android.data.GpsModel;
+import org.droidplanner.android.data.SignalModel;
 import org.droidplanner.android.fragments.SettingsFragment;
 import org.droidplanner.android.fragments.helpers.ApiListenerFragment;
 import org.droidplanner.android.utils.analytics.GAUtils;
@@ -45,6 +47,9 @@ import java.util.Locale;
  * Created by Fredia Huya-Kouadio on 1/14/15.
  */
 public class ActionBarTelemFragment extends ApiListenerFragment {
+
+    private boolean fregIsVisiable;
+    private int curMode = -1;
 
     private final static IntentFilter eventFilter = new IntentFilter();
 
@@ -63,11 +68,19 @@ public class ActionBarTelemFragment extends ApiListenerFragment {
         eventFilter.addAction(SettingsFragment.ACTION_PREF_HDOP_UPDATE);
         eventFilter.addAction(SettingsFragment.ACTION_PREF_UNIT_SYSTEM_UPDATE);
         eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_BETTERY);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_SIGNAL);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_GPS);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE);
     }
 
     private final BroadcastReceiver eventReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+
+            if(!fregIsVisiable){
+                showTelemBar();
+            }
+
             if(getActivity() == null)
                 return;
 
@@ -114,6 +127,18 @@ public class ActionBarTelemFragment extends ApiListenerFragment {
                     break;
                 case BroadCastIntent.PROPERTY_DRONE_BETTERY:
                     updateBatteryTelem(((SuperUI) getActivity()).mDroneModel);
+                    break;
+                case BroadCastIntent.PROPERTY_DRONE_SIGNAL:
+                    updateSignalTelem(((SuperUI) getActivity()).mSignalModel);
+                    break;
+                case BroadCastIntent.PROPERTY_DRONE_GPS:
+                    updateGpsTelem(((SuperUI) getActivity()).mGpsModel);
+                    break;
+                case BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE:
+                    if(intent.getIntExtra("Mode",-2)!=curMode){
+                        curMode = intent.getIntExtra("Mode", -2);
+                        updateFlightModeTelem(curMode);
+                    }
                     break;
                 default:
                     break;
@@ -201,12 +226,14 @@ public class ActionBarTelemFragment extends ApiListenerFragment {
     }
 
     private void showTelemBar(){
+        fregIsVisiable = true;
         final View view = getView();
         if(view != null)
             view.setVisibility(View.VISIBLE);
     }
 
     private void hideTelemBar(){
+        fregIsVisiable = false;
         final View view = getView();
         if(view != null)
             view.setVisibility(View.GONE);
@@ -458,6 +485,165 @@ public class ActionBarTelemFragment extends ApiListenerFragment {
     }
 
     private void updateBatteryTelem(DroneModel mDroneModel) {
+        final View batteryPopupView = batteryPopup.getContentView();
+        final TextView dischargeView = (TextView) batteryPopupView.findViewById(R.id.bar_power_discharge);
+        final TextView currentView = (TextView) batteryPopupView.findViewById(R.id.bar_power_current);
+        final TextView mAhView = (TextView) batteryPopupView.findViewById(R.id.bar_power_mAh);
 
+        String update;
+        final int batteryIcon;
+        dischargeView.setVisibility(View.GONE);
+        if (mDroneModel==null) {
+            update = emptyString;
+            currentView.setText("C: " + emptyString);
+            mAhView.setText("R: " + emptyString);
+            batteryIcon = R.drawable.ic_battery_unknown_black_24dp;
+        } else {
+            mAhView.setText(String.format(Locale.ENGLISH, "R: %2.0f %%", mDroneModel.getBatteryRemain()));
+            currentView.setText(String.format("C: %2.1f A", mDroneModel.getBatteryCurrent()));
+            update = String.format(Locale.ENGLISH, "%2.1f V", mDroneModel.getBatteryVoltage());
+            batteryIcon = R.drawable.ic_battery_std_black_24dp;
+        }
+
+        batteryPopup.update();
+        batteryTelem.setText(update);
+        batteryTelem.setCompoundDrawablesWithIntrinsicBounds(batteryIcon, 0, 0, 0);
+    }
+
+
+
+
+    private void updateSignalTelem(SignalModel signal) {
+
+        final View popupView = signalPopup.getContentView();
+        TextView rssiView = (TextView) popupView.findViewById(R.id.bar_signal_rssi);
+        TextView remRssiView = (TextView) popupView.findViewById(R.id.bar_signal_remrssi);
+        TextView noiseView = (TextView) popupView.findViewById(R.id.bar_signal_noise);
+        TextView remNoiseView = (TextView) popupView.findViewById(R.id.bar_signal_remnoise);
+        TextView fadeView = (TextView) popupView.findViewById(R.id.bar_signal_fade);
+        TextView remFadeView = (TextView) popupView.findViewById(R.id.bar_signal_remfade);
+
+        if(signal==null){
+            signalTelem.setText(emptyString);
+            signalTelem.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_signal_wifi_statusbar_null_black_24dp,
+                    0, 0, 0);
+
+            rssiView.setText("RSSI: " + emptyString);
+            remRssiView.setText("RemRSSI: " + emptyString);
+            noiseView.setText("Noise: " + emptyString);
+            remNoiseView.setText("RemNoise: " + emptyString);
+            fadeView.setText("Fade: "  + emptyString);
+            remFadeView.setText("RemFade: " + emptyString);
+        }
+        else{
+            final int signalStrength = MathUtils.getSignalStrength(signal.getFadeMargin(),
+                    signal.getRemFadeMargin());
+            final int signalIcon;
+            if (signalStrength >= 100)
+                signalIcon = R.drawable.ic_signal_wifi_4_bar_black_24dp;
+            else if (signalStrength >= 75)
+                signalIcon = R.drawable.ic_signal_wifi_3_bar_black_24dp;
+            else if (signalStrength >= 50)
+                signalIcon = R.drawable.ic_signal_wifi_2_bar_black_24dp;
+            else if (signalStrength >= 25)
+                signalIcon = R.drawable.ic_signal_wifi_1_bar_black_24dp;
+            else
+                signalIcon = R.drawable.ic_signal_wifi_0_bar_black_24dp;
+
+            signalTelem.setText(String.format(Locale.ENGLISH, "%d%%", signalStrength));
+            signalTelem.setCompoundDrawablesWithIntrinsicBounds(signalIcon, 0, 0, 0);
+
+            rssiView.setText(String.format("RSSI %2.0f dB", signal.getRssi()));
+            remRssiView.setText(String.format("RemRSSI %2.0f dB", signal.getRemrssi()));
+            noiseView.setText(String.format("Noise %2.0f dB", signal.getNoise()));
+            remNoiseView.setText(String.format("RemNoise %2.0f dB", signal.getRemnoise()));
+            fadeView.setText(String.format("Fade %2.0f dB", signal.getFadeMargin()));
+            remFadeView.setText(String.format("RemFade %2.0f dB", signal.getRemFadeMargin()));
+        }
+
+        signalPopup.update();
+    }
+
+
+    private void updateGpsTelem(GpsModel mGpsModel) {
+        final boolean displayHdop = appPrefs.shouldGpsHdopBeDisplayed();
+
+        final View popupView = gpsPopup.getContentView();
+        TextView satNoView = (TextView) popupView.findViewById(R.id.bar_gps_satno);
+        TextView hdopStatusView = (TextView) popupView.findViewById(R.id.bar_gps_hdop_status);
+        hdopStatusView.setVisibility(displayHdop ? View.GONE : View.VISIBLE);
+
+        final String update;
+        final int gpsIcon;
+        if (mGpsModel==null) {
+            update = (displayHdop ? "HDOP: " : "") + emptyString;
+            gpsIcon = R.drawable.ic_gps_off_black_24dp;
+            satNoView.setText("S: " + emptyString);
+            hdopStatusView.setText("HDOP: " + emptyString);
+        } else {
+            final String fixStatus = mGpsModel.getFixStatus();
+
+            if (displayHdop) {
+                update = String.format(Locale.ENGLISH, "HDOP: %.1f", mGpsModel.getGpsEph());
+            } else {
+                update = String.format(Locale.ENGLISH, "%s", fixStatus);
+            }
+
+            switch(fixStatus){
+                case Gps.LOCK_3D:
+//                case Gps.LOCK_3D_DGPS:
+//                case Gps.LOCK_3D_RTK:
+//                    gpsIcon = R.drawable.ic_gps_fixed_black_24dp;
+//                    break;
+
+                case Gps.LOCK_2D:
+                case Gps.NO_FIX:
+                default:
+                    gpsIcon = R.drawable.ic_gps_not_fixed_black_24dp;
+                    break;
+            }
+
+            satNoView.setText(String.format(Locale.ENGLISH, "S: %d", mGpsModel.getSatCount()));
+            if (appPrefs.shouldGpsHdopBeDisplayed()) {
+                hdopStatusView.setText(String.format(Locale.ENGLISH, "%s", fixStatus));
+            } else {
+                hdopStatusView.setText(String.format(Locale.ENGLISH, "HDOP: %.1f", mGpsModel.getGpsEph()));
+            }
+        }
+
+        gpsTelem.setText(update);
+        gpsTelem.setCompoundDrawablesWithIntrinsicBounds(gpsIcon, 0, 0, 0);
+        gpsPopup.update();
+    }
+
+
+
+    private void updateFlightModeTelem(int mode) {
+        if(modeAdapter.isEmpty()){
+            initList();
+        }
+        flightModeTelem.forcedSetSelection(mode);
+
+    }
+
+    private void initList() {
+        final List<VehicleMode> flightModes = VehicleMode.getVehicleModePerDroneType(Type.TYPE_COPTER);
+
+        modeAdapter.clear();
+        modeAdapter.addAll(flightModes);
+        modeAdapter.notifyDataSetChanged();
+    }
+
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        getActivity().registerReceiver(eventReceiver, eventFilter);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        getActivity().unregisterReceiver(eventReceiver);
     }
 }

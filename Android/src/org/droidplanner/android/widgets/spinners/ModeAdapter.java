@@ -1,7 +1,5 @@
 package org.droidplanner.android.widgets.spinners;
 
-import java.util.List;
-
 import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +7,8 @@ import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
 import com.o3dr.services.android.lib.drone.property.VehicleMode;
+
+import java.util.List;
 
 public class ModeAdapter extends ArrayAdapter<VehicleMode> {
 
@@ -32,5 +32,6 @@ public class ModeAdapter extends ArrayAdapter<VehicleMode> {
 	public View getDropDownView(int position, View convertView, ViewGroup parent) {
 		return getView(position, convertView, parent);
 	}
+
 
 }

@@ -20,6 +20,8 @@ import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
 import org.droidplanner.android.DroidPlannerApp;
 import org.droidplanner.android.R;
 import org.droidplanner.android.data.DroneModel;
+import org.droidplanner.android.data.GpsModel;
+import org.droidplanner.android.data.SignalModel;
 import org.droidplanner.android.dialogs.SlideToUnlockDialog;
 import org.droidplanner.android.dialogs.SupportYesNoDialog;
 import org.droidplanner.android.dialogs.SupportYesNoWithPrefsDialog;
@@ -39,6 +41,8 @@ public abstract class SuperUI extends AppCompatActivity implements DroidPlannerA
     private static final IntentFilter superIntentFilter = new IntentFilter();
 
     public DroneModel mDroneModel;
+    public SignalModel mSignalModel;
+    public GpsModel mGpsModel;
 
     static {
         superIntentFilter.addAction(AttributeEvent.STATE_CONNECTED);
@@ -105,6 +109,8 @@ public abstract class SuperUI extends AppCompatActivity implements DroidPlannerA
         Utils.updateUILanguage(context);
 
         mDroneModel = DroneModel.getDroneModel();
+        mSignalModel = SignalModel.getSignalModel();
+        mGpsModel = GpsModel.getGpsModel();
     }
 
     @Override

@@ -24,7 +24,11 @@ import android.widget.Toast;
 
 import com.MAVLink.MAVLinkPacket;
 import com.MAVLink.Parser;
+import com.MAVLink.ardupilotmega.msg_radio;
 import com.MAVLink.common.msg_attitude;
+import com.MAVLink.common.msg_global_position_int;
+import com.MAVLink.common.msg_gps_raw_int;
+import com.MAVLink.common.msg_heartbeat;
 import com.MAVLink.common.msg_sys_status;
 import com.MAVLink.common.msg_vfr_hud;
 import com.google.android.gms.common.ConnectionResult;
@@ -33,6 +37,7 @@ import com.o3dr.android.client.Drone;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEventExtra;
 import com.o3dr.services.android.lib.drone.attribute.error.ErrorType;
+import com.o3dr.services.android.lib.util.MathUtils;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import org.droidplanner.android.R;
@@ -76,6 +81,7 @@ public class FlightActivity extends BaseActivity {
     private String resource;
 
     private MessageListener xmppMessageListener;
+    private int curMode;
 
 
     static {
@@ -562,6 +568,7 @@ public class FlightActivity extends BaseActivity {
                         Toast.LENGTH_SHORT).show();
             }
         });
+
     }
 
     public static String getMacAddress(Context context) {
@@ -598,6 +605,9 @@ public class FlightActivity extends BaseActivity {
             });
             return;
         } else if (content.contains(MoApplication.XMPPCommand.DRONE)) {
+            if(!fragmentManager.findFragmentById(R.id.flightActionsFragment).isHidden()){
+                fragmentManager.beginTransaction().hide(flightActions).commit();
+            }
             Log.d("Zack",content);
             Parser drone_parser = new Parser();
             String[] pktArr = content.split(MoApplication.XMPPCommand.DRONE + "@FROM_DRONE");
@@ -655,14 +665,47 @@ public class FlightActivity extends BaseActivity {
                 break;
             case msg_sys_status.MAVLINK_MSG_ID_SYS_STATUS:
                 msg_sys_status mSystemStatus = (msg_sys_status)pkt.unpack();
-                mDroneModel.setBatteryCurrent(mSystemStatus.current_battery/ 100.0);
+                mDroneModel.setBatteryCurrent(mSystemStatus.current_battery / 100.0);
                 mDroneModel.setBatteryRemain(mSystemStatus.battery_remaining);
                 mDroneModel.setBatteryVoltage(mSystemStatus.voltage_battery);
                 i.setAction(BroadCastIntent.PROPERTY_DRONE_BETTERY);
                 break;
-
+            case msg_gps_raw_int.MAVLINK_MSG_ID_GPS_RAW_INT:
+                msg_gps_raw_int mGpsRaw = (msg_gps_raw_int)pkt.unpack();
+                mGpsModel.setGpsEph(mGpsRaw.eph);
+                mGpsModel.setFixType(mGpsRaw.fix_type);
+                mGpsModel.setSatCount(mGpsRaw.satellites_visible);
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_GPS);
+                break;
+            case msg_global_position_int.MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+                msg_global_position_int mGpsPosition = (msg_global_position_int)pkt.unpack();
+                mGpsModel.setPosition(mGpsPosition.lat / 1E7, mGpsPosition.lon / 1E7);
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_GPS);
+                break;
+            case msg_radio.MAVLINK_MSG_ID_RADIO:
+                msg_radio mRadio = (msg_radio)pkt.unpack();
+                mSignalModel.setFixed(mRadio.fixed);
+                mSignalModel.setNoise(mRadio.noise);
+                mSignalModel.setRemnoise(mRadio.remnoise);
+                mSignalModel.setRemrssi(mRadio.remrssi);
+                mSignalModel.setRssi(mRadio.rssi);
+                mSignalModel.setRxerrors(mRadio.rxerrors);
+                mSignalModel.setTxbuf(mRadio.txbuf);
+                mSignalModel.setSignalStrength(MathUtils.getSignalStrength(mSignalModel.getFadeMargin(), mSignalModel.getRemFadeMargin()));
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_SIGNAL);
+                break;
+            case msg_heartbeat.MAVLINK_MSG_ID_HEARTBEAT:
+                msg_heartbeat mMode = (msg_heartbeat)pkt.unpack();
+                    curMode = (int)mMode.custom_mode;
+                    i.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE);
+                    i.putExtra("Mode",curMode);
+                break;
         }
         sendBroadcast(i);
+    }
+
+    public int getDroneMode(){
+        return curMode;
     }
 
     @SuppressLint("NewApi")
