@@ -44,6 +44,7 @@ public class TelemetryFragment extends ApiListenerFragment {
         eventFilter.addAction(AttributeEvent.ALTITUDE_UPDATED);
         eventFilter.addAction(AttributeEvent.STATE_UPDATED);
         eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_ATTITUDE);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_SPEED);
     }
 
     /**
@@ -87,7 +88,8 @@ public class TelemetryFragment extends ApiListenerFragment {
                     });
                     break;
                 case BroadCastIntent.PROPERTY_DRONE_SPEED:
-                    onOrientationUpdate(((SuperUI) getActivity()).mDroneModel);
+                    Log.d("Zack","Receive Speed");
+                    onSpeedUpdate(((SuperUI) getActivity()).mDroneModel);
                     break;
             }
         }
@@ -223,8 +225,6 @@ public class TelemetryFragment extends ApiListenerFragment {
         if (!headingModeFPV & y < 0) {
             y = 360 + y;
         }
-
-        Log.d("Zack",r+"@"+p+"@"+y);
         attitudeIndicator.setAttitude(r, p, y);
 
         roll.setText(String.format("%3.0f\u00B0", r));
@@ -279,6 +279,9 @@ public class TelemetryFragment extends ApiListenerFragment {
             airSpeed.setText(speedUnitProvider.boxBaseValueToTarget(drone.getAirSpeed()).toString());
             groundSpeed.setText(speedUnitProvider.boxBaseValueToTarget(drone.getGroundSpeed()).toString());
             climbRate.setText(speedUnitProvider.boxBaseValueToTarget(drone.getVerticalSpeed()).toString());
+            double alt = drone.getAlt();
+            LengthUnit altUnit = getLengthUnitProvider().boxBaseValueToTarget(alt);
+            this.altitude.setText(altUnit.toString());
         }
     }
 

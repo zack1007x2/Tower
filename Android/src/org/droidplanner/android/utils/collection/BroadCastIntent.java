@@ -7,5 +7,6 @@ public class BroadCastIntent {
     public static final String PACKAGE_NAME = "com.moremote.mavlink";
     public static final String PROPERTY_DRONE_ATTITUDE = PACKAGE_NAME + ".PROPERTY_DRONE_ATTITUDE";
     public static final String PROPERTY_DRONE_SPEED = PACKAGE_NAME + ".PROPERTY_DRONE_SPEED";
+    public static final String PROPERTY_DRONE_BETTERY = PACKAGE_NAME + ".PROPERTY_DRONE_BETTERY";
 
 }

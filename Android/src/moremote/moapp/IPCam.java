@@ -210,7 +210,7 @@ public class IPCam {
         return decoderNumber;
     }
 
-    public void startStun(){
+    public void (){
         Log.e("Ray", "startStun");
         stunAsyncTask = new StunAsyncTask(xmppConnector, MoApplication.XMPPCommand.STUN, this, stunMsgHandler, MoApplication.getLocalIpAddress());
         stunAsyncTask.start();

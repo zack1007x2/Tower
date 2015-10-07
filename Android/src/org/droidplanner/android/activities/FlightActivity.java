@@ -25,6 +25,7 @@ import android.widget.Toast;
 import com.MAVLink.MAVLinkPacket;
 import com.MAVLink.Parser;
 import com.MAVLink.common.msg_attitude;
+import com.MAVLink.common.msg_sys_status;
 import com.MAVLink.common.msg_vfr_hud;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
@@ -597,10 +598,12 @@ public class FlightActivity extends BaseActivity {
             });
             return;
         } else if (content.contains(MoApplication.XMPPCommand.DRONE)) {
+            Log.d("Zack",content);
             Parser drone_parser = new Parser();
             String[] pktArr = content.split(MoApplication.XMPPCommand.DRONE + "@FROM_DRONE");
             for (int i = 0; i < pktArr.length; i++) {
                 if (pktArr[i].contains("[")) {
+//                    Log.d("Zack","pktArr[i] = "+pktArr[i]);
                     ByteBuffer pktBuffer = StringToByteBuffer(pktArr[i]);
                     for (int j = 0; j < pktBuffer.limit(); j++) {
                         MAVLinkPacket pkt = drone_parser.mavlink_parse_char(pktBuffer.get(j) &
@@ -646,7 +649,16 @@ public class FlightActivity extends BaseActivity {
                 msg_vfr_hud msg_speed = (msg_vfr_hud) pkt.unpack();
                 mDroneModel.setAirSpeed(msg_speed.airspeed);
                 mDroneModel.setGroundSpeed(msg_speed.groundspeed);
+                mDroneModel.setVerticalSpeed(msg_speed.climb);
+                mDroneModel.setAlt(msg_speed.alt);
                 i.setAction(BroadCastIntent.PROPERTY_DRONE_SPEED);
+                break;
+            case msg_sys_status.MAVLINK_MSG_ID_SYS_STATUS:
+                msg_sys_status mSystemStatus = (msg_sys_status)pkt.unpack();
+                mDroneModel.setBatteryCurrent(mSystemStatus.current_battery/ 100.0);
+                mDroneModel.setBatteryRemain(mSystemStatus.battery_remaining);
+                mDroneModel.setBatteryVoltage(mSystemStatus.voltage_battery);
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_BETTERY);
                 break;
 
         }

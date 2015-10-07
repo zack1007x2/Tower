@@ -28,9 +28,12 @@ import com.o3dr.services.android.lib.util.MathUtils;
 
 import org.beyene.sius.unit.length.LengthUnit;
 import org.droidplanner.android.R;
+import org.droidplanner.android.activities.helpers.SuperUI;
+import org.droidplanner.android.data.DroneModel;
 import org.droidplanner.android.fragments.SettingsFragment;
 import org.droidplanner.android.fragments.helpers.ApiListenerFragment;
 import org.droidplanner.android.utils.analytics.GAUtils;
+import org.droidplanner.android.utils.collection.BroadCastIntent;
 import org.droidplanner.android.utils.prefs.DroidPlannerPrefs;
 import org.droidplanner.android.widgets.spinners.ModeAdapter;
 import org.droidplanner.android.widgets.spinners.SpinnerSelfSelect;
@@ -59,6 +62,7 @@ public class ActionBarTelemFragment extends ApiListenerFragment {
 
         eventFilter.addAction(SettingsFragment.ACTION_PREF_HDOP_UPDATE);
         eventFilter.addAction(SettingsFragment.ACTION_PREF_UNIT_SYSTEM_UPDATE);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_BETTERY);
     }
 
     private final BroadcastReceiver eventReceiver = new BroadcastReceiver() {
@@ -108,7 +112,9 @@ public class ActionBarTelemFragment extends ApiListenerFragment {
                 case SettingsFragment.ACTION_PREF_UNIT_SYSTEM_UPDATE:
                     updateHomeTelem();
                     break;
-
+                case BroadCastIntent.PROPERTY_DRONE_BETTERY:
+                    updateBatteryTelem(((SuperUI) getActivity()).mDroneModel);
+                    break;
                 default:
                     break;
             }
@@ -449,5 +455,9 @@ public class ActionBarTelemFragment extends ApiListenerFragment {
         else{
             return String.format(Locale.ENGLISH, "%2.0f mAh", chargeInmAh);
         }
+    }
+
+    private void updateBatteryTelem(DroneModel mDroneModel) {
+
     }
 }

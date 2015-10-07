@@ -21,6 +21,7 @@ public class DroneModel {
     private double verticalSpeed; // m/s
     private double groundSpeed; // m/s
     private double airSpeed; // m/s
+    private double alt;
 
 
     private double batteryVoltage;
@@ -156,5 +157,13 @@ public class DroneModel {
 
     public void setYawspeed(float yawspeed) {
         this.yawspeed = yawspeed;
+    }
+
+    public double getAlt() {
+        return alt;
+    }
+
+    public void setAlt(double alt) {
+        this.alt = alt;
     }
 }
