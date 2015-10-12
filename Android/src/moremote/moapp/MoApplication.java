@@ -25,6 +25,12 @@ public class MoApplication extends Application {
     public static final int P2PSERVER_PORT = 9010;
     public static final String P2PSERVER_IP2 = "128.199.141.188";
     public static final int P2PSERVER_PORT2 = 9011;
+
+
+    public static final String USER_ID = "piuser3@xmpp.moremote.com";
+    public static final String USER_PWD = "piuser3";
+    public static final String CONNECT_TO = "piuser300@xmpp.moremote.com";
+
 	
 	public static class XMPPCommand {
 		public static final String STREAM_START 	= "streamstart";

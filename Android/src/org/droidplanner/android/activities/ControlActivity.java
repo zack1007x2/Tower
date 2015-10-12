@@ -1,6 +1,10 @@
 package org.droidplanner.android.activities;
 
 import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
@@ -13,18 +17,23 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.MAVLink.MAVLinkPacket;
 import com.MAVLink.Parser;
 import com.MAVLink.common.msg_attitude;
 import com.MAVLink.common.msg_heartbeat;
+import com.MAVLink.common.msg_rc_channels_override;
 import com.MAVLink.common.msg_set_mode;
 
 import org.droidplanner.android.R;
 import org.droidplanner.android.data.DroneModel;
 import org.droidplanner.android.fragments.XmppControlFragment;
+import org.droidplanner.android.utils.collection.BroadCastIntent;
 import org.droidplanner.android.utils.prefs.DRONE_MODE;
+import org.droidplanner.android.widgets.CusJoystickView;
+import org.droidplanner.android.widgets.JoystickView;
 import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.MessageListener;
 import org.jivesoftware.smack.packet.Message;
@@ -35,11 +44,9 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.util.HashMap;
-import java.util.Map;
 
 import moremote.moapp.IPCam;
 import moremote.moapp.MoApplication;
-import moremote.moapp.activity.BaseActivity;
 import moremote.moapp.asynctask.TCPConnectAsyncTask;
 import moremote.p2p.TCPClient;
 import moremote.relay.RelayClient;
@@ -47,12 +54,11 @@ import moremote.relay.RelayConnectionListener;
 import moremote.surface.MyGLSurfaceView;
 
 
-public class ControlActivity extends BaseActivity {
+public class ControlActivity extends JoystickControlActivity {
 
     private final static String TAG = AccountActivity.class.getSimpleName();
 
 
-    private String connectTo;
     private Spinner mSpinnerMode;
     private int cur_mode = 0;
     private String MsgTitle = MoApplication.XMPPCommand.DRONE;
@@ -67,12 +73,48 @@ public class ControlActivity extends BaseActivity {
     public Button bt_streaming;
 
 
+    private final static IntentFilter eventFilter = new IntentFilter();
+
+    static {
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
+    }
+
+
+    private final BroadcastReceiver eventReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            switch (intent.getAction()) {
+
+                case BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION:
+
+                    cur_mode = (int) DRONE_MODE.getDronePositionMap().getValue(intent.getIntExtra
+                            ("mode",0));
+                    String Msg_Mode = MsgTitle+ msg_set_mode
+                            .MAVLINK_MSG_ID_SET_MODE + "@" + cur_mode;
+                    Log.d("Zack",Msg_Mode);
+                    xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg_Mode);
+                    break;
+
+//                case BroadCastIntent.PROPERTY_DRONE_RC_OVERRIDE_ACTION:
+//                    msg_rc_channels_override cmd = (msg_rc_channels_override) intent.getSerializableExtra("rc_cmd");
+//                    String Msg_RC = MsgTitle+msg_rc_channels_override
+//                            .MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE+ "@"+cmd.chan1_raw+
+//                            "@"+cmd.chan2_raw+ "@"+cmd.chan3_raw+ "@"+cmd.chan4_raw+ "@"+cmd.chan5_raw+
+//                            "@"+cmd.chan6_raw+ "@"+cmd.chan7_raw+"@"+cmd.chan8_raw;
+//                    Log.d("Zack",Msg_RC);
+//                    xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg_RC);
+//                    break;
+            }
+        }
+    };
 
     /*----------------------------------------decoder -------------------------------------------------*/
-    static{
+    static {
         System.loadLibrary("UDTClientJni");
     }
+
     boolean isPlayMusic;
+
     private native void DecoderInitial();
 
     MyGLSurfaceView surfaceView;
@@ -94,12 +136,24 @@ public class ControlActivity extends BaseActivity {
     }
 
     private void initView() {
-        connectTo = getResources().getString(R.string.connect_to);
+        joystick_left = (CusJoystickView) findViewById(R.id.joystick_left);
+        joystick_right = (JoystickView) findViewById(R.id.joystick_right);
 
-        mSpinnerMode = (Spinner)findViewById(R.id.spinnerMode);
-        bt_streaming = (Button)findViewById(R.id.bt_streaming);
-        String[] modes = {"Stabilize", "Acro", "Alt Hold", "Auto","Guided","Loiter","RTL",
-                "Circle","Land","Drift","Sport","Flip","Autotune", "PosHold", "Brake"};
+        tvRL = (TextView) findViewById(R.id.tvRL);
+        tvFB = (TextView) findViewById(R.id.tvFB);
+        tvPower = (TextView) findViewById(R.id.tvPower);
+        tvRotate = (TextView) findViewById(R.id.tvRotate);
+
+        joystick_left.setOnJoystickMoveListener(mLeftOnJoystickMoveListener, CusJoystickView
+                .DEFAULT_LOOP_INTERVAL);
+
+        joystick_right.setOnJoystickMoveListener(mRightOnJoystickMoveListener, JoystickView.DEFAULT_LOOP_INTERVAL);
+
+
+        mSpinnerMode = (Spinner) findViewById(R.id.spinnerMode);
+        bt_streaming = (Button) findViewById(R.id.bt_streaming);
+        String[] modes = {"Stabilize", "Acro", "Alt Hold", "Auto", "Guided", "Loiter", "RTL",
+                "Circle", "Land", "Drift", "Sport", "Flip", "Autotune", "PosHold", "Brake"};
         ArrayAdapter<String> ModeItem = new ArrayAdapter<String>(this, android.R.layout
                 .simple_spinner_item, modes);
         ModeItem.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -110,8 +164,8 @@ public class ControlActivity extends BaseActivity {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 cur_mode = (int) DRONE_MODE.getDronePositionMap().getKey(position);
                 String Msg = MsgTitle + msg_set_mode
-                        .MAVLINK_MSG_ID_SET_MODE+"@"+ cur_mode;
-                xmppConnection.sendMessage(connectTo, Msg);
+                        .MAVLINK_MSG_ID_SET_MODE + "@" + cur_mode;
+                xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg);
             }
 
             @Override
@@ -120,7 +174,7 @@ public class ControlActivity extends BaseActivity {
             }
 
         });
-        surfaceView = (MyGLSurfaceView)findViewById(R.id.GLSurfaceView);
+        surfaceView = (MyGLSurfaceView) findViewById(R.id.GLSurfaceView);
         surfaceView.setBackgroundColor(Color.BLACK);
     }
 
@@ -139,18 +193,15 @@ public class ControlActivity extends BaseActivity {
     }
 
 
-
-
-    private void DoAfterSuccess(){
+    private void DoAfterSuccess() {
         createChat();
         DecoderInitial();
 
-        mainCam = new IPCam(connectTo, surfaceView, xmppConnection, ipcamCount++);
+        mainCam = new IPCam(MoApplication.CONNECT_TO, surfaceView, xmppConnection, ipcamCount++);
         mainCam.setPlayButton(bt_streaming);
         mainCam.setToastHandler(toastHandler);
-        connectedMap.put(connectTo, mainCam);
+        connectedMap.put(MoApplication.CONNECT_TO, mainCam);
     }
-
 
 
     private void createChat() {
@@ -163,9 +214,9 @@ public class ControlActivity extends BaseActivity {
         xmppConnection.addMessageListener(xmppMessageListener);
     }
 
-    private Handler toastHandler = new Handler(){
+    private Handler toastHandler = new Handler() {
 
-        public void handleMessage(android.os.Message msg){
+        public void handleMessage(android.os.Message msg) {
             Bundle bundle = msg.getData();
             String toToast = bundle.getString("toToast");
             Toast.makeText(ControlActivity.this, toToast, Toast.LENGTH_LONG).show();
@@ -200,9 +251,9 @@ public class ControlActivity extends BaseActivity {
             xmppConnection.removeMessageListener(xmppMessageListener);
             xmppMessageListener = null;
         }
-        for(Object key : connectedMap.keySet()){
+        for (Object key : connectedMap.keySet()) {
 
-            IPCam ipcam = (IPCam)connectedMap.get(key);
+            IPCam ipcam = (IPCam) connectedMap.get(key);
             ipcam.stopStreaming();
             Log.e("Ray", "destroy: " + ipcam.jid);
 
@@ -236,94 +287,99 @@ public class ControlActivity extends BaseActivity {
             String auth = content.substring(startPosition + 32, content.length());
 
             String jid = chat.getParticipant();
-            if(jid.contains("/")) {
+            if (jid.contains("/")) {
                 jid = jid.substring(0, jid.lastIndexOf("/"));
             }
-            IPCam ipcam = (IPCam)connectedMap.get(jid);
+            IPCam ipcam = (IPCam) connectedMap.get(jid);
             startTCPRelay(ipcam, uuid, auth);
-        }
-        else if (content.contains(MoApplication.XMPPCommand.TCP_CONNECTION)) {
+        } else if (content.contains(MoApplication.XMPPCommand.TCP_CONNECTION)) {
             String jid = chat.getParticipant();
-            if(jid.contains("/")) {
+            if (jid.contains("/")) {
                 jid = jid.substring(0, jid.lastIndexOf("/"));
             }
-            IPCam ipcam = (IPCam)connectedMap.get(jid);
+            IPCam ipcam = (IPCam) connectedMap.get(jid);
             int dashPosition = content.indexOf(":");
             ipcam.destinationPort = Integer.valueOf(content.substring(dashPosition + 1, content.length()));
             startP2POverTCP(ipcam);
-        }
-        else if(content.contains(MoApplication.XMPPCommand.ALARM_BABY)){
+        } else if (content.contains(MoApplication.XMPPCommand.ALARM_BABY)) {
             Log.e("Ray", "baby alarm!!!");
             int dashPosition = content.indexOf(":");
             int Rnumber = Integer.valueOf(content.substring(dashPosition + 1, content.length()));
             android.os.Message msg = new android.os.Message();
             msg.what = Rnumber;
             alarmMsgHandler.sendMessage(msg);
-        }
-        else if (content.contains(MoApplication.XMPPCommand.ALARM_SOUND)){
+        } else if (content.contains(MoApplication.XMPPCommand.ALARM_SOUND)) {
             int dashPosition = content.indexOf(":");
             String soundCase = content.substring(dashPosition + 1, content.length());
             android.os.Message msg = new android.os.Message();
             msg.what = 0;
             alarmMsgHandler.sendMessage(msg);
-        }
-        else if(content.contains(MoApplication.XMPPCommand.CAMERA_TYPE)){
+        } else if (content.contains(MoApplication.XMPPCommand.CAMERA_TYPE)) {
 //            Log.e("Ray","@#getCameraType in MainActivity");
 //            int cameraType = Integer.valueOf(content.split(":")[1]);
 //            this.cameraType = cameraType;
-        }else if(content.contains(MoApplication.XMPPCommand.DRONE)){
-//            Toast.makeText(ControlActivity.this, "Receive Msg => "+content,Toast.LENGTH_SHORT).show();
-            content = content.substring(17);
-            if(content.contains("[")) {
-                String[] byteValues = content.substring(1, content.length() - 1).split(",");
-                byte[] bytes = new byte[byteValues.length];
-
-                for (int i = 0, len = bytes.length; i < len; i++) {
-                    bytes[i] = Byte.parseByte(byteValues[i].trim());
-                }
-                Parser drone_parser = new Parser();
-                ByteBuffer tmpBtyrBuffer = ByteBuffer.allocate(bytes.length);
-                tmpBtyrBuffer.put(bytes);
-                for (int i = 0; i < tmpBtyrBuffer.limit(); i++) {
-                    MAVLinkPacket pkt = drone_parser.mavlink_parse_char(tmpBtyrBuffer.get(i) &
-                            0x00ff);
-                    if(pkt!=null){
-                        handlePacket(pkt);
-
+        } else if (content.contains(MoApplication.XMPPCommand.DRONE)) {
+            Parser drone_parser = new Parser();
+            String[] pktArr = content.split(MoApplication.XMPPCommand.DRONE + "@FROM_DRONE");
+            for (int i = 0; i < pktArr.length; i++) {
+                if (pktArr[i].contains("[")) {
+                    ByteBuffer pktBuffer = StringToByteBuffer(pktArr[i]);
+                    for (int j = 0; j < pktBuffer.limit(); j++) {
+                        MAVLinkPacket pkt = drone_parser.mavlink_parse_char(pktBuffer.get(j) &
+                                0x00ff);
+                        if (pkt != null) {
+                            handlePacket(pkt);
+                        }
                     }
-
                 }
             }
         }
     }
 
+    private ByteBuffer StringToByteBuffer(String content) {
+        String[] byteValues = content.substring(1, content.length() - 1).split(",");
+        byte[] bytes = new byte[byteValues.length];
+
+        for (int j = 0, len = bytes.length; j < len; j++) {
+            bytes[j] = Byte.parseByte(byteValues[j].trim());
+        }
+
+        ByteBuffer tmpBtyrBuffer = ByteBuffer.allocate(bytes.length);
+        tmpBtyrBuffer.put(bytes);
+        return tmpBtyrBuffer;
+    }
+
     private void handlePacket(MAVLinkPacket pkt) {
         int msgId = pkt.unpack().msgid;
-        DroneModel mDroneModel = DroneModel.getDroneModel();
-        switch(msgId){
-
+        switch (msgId) {
             case msg_attitude.MAVLINK_MSG_ID_ATTITUDE:
                 msg_attitude msg = (msg_attitude) pkt.unpack();
+                DroneModel mDroneModel = DroneModel.getDroneModel();
                 mDroneModel.setRoll(msg.roll);
+                break;
             case msg_heartbeat.MAVLINK_MSG_ID_HEARTBEAT:
-                msg_heartbeat msgMode = (msg_heartbeat) pkt.unpack();
-                mSpinnerMode.setSelection((Integer) DRONE_MODE.getDronePositionMap().getValue(msgMode
-                        .custom_mode));
+                msg_heartbeat msgHB = (msg_heartbeat) pkt.unpack();
+                final int cusMode = (int)msgHB.custom_mode;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mSpinnerMode.setSelection((int) DRONE_MODE.getDronePositionMap().getValue(cusMode));
+                    }
+                });
                 break;
 
         }
 
     }
 
-    private Handler alarmMsgHandler = new Handler(){
-        public void handleMessage(android.os.Message msg){
+    private Handler alarmMsgHandler = new Handler() {
+        public void handleMessage(android.os.Message msg) {
             super.handleMessage(msg);
             int Rnumber = msg.what;
-            if(Rnumber !=0) {
+            if (Rnumber != 0) {
                 String alarm = "Alarm: Baby appears at " + Rnumber + "!!!";
                 Toast.makeText(ControlActivity.this, alarm, Toast.LENGTH_SHORT).show();
-            }
-            else {
+            } else {
                 String alarm = "Alarm: Sound is too loud!!!";
                 Toast.makeText(ControlActivity.this, alarm, Toast.LENGTH_SHORT).show();
             }
@@ -347,11 +403,12 @@ public class ControlActivity extends BaseActivity {
             }
 
             @Override
-            public void authed(String auth) {}
+            public void authed(String auth) {
+            }
         });
         relayClient.setMessageListener(ipcam.getTcpMessageListener());
         ipcam.setRelayClient(relayClient);
-        if(ipcam.jid == mainCam.jid){
+        if (ipcam.jid == mainCam.jid) {
             this.relayClient = relayClient;
         }
         new Thread(new Runnable() {
@@ -369,7 +426,7 @@ public class ControlActivity extends BaseActivity {
         Log.e("Ray", "connecting..! " + ipcam.jid + ", " + ipcam.destinationIP + ", " + ipcam.destinationPort);
         tcpClient.setMessageListener(ipcam.getTcpMessageListener());
         ipcam.setTcpClient(tcpClient);
-        if(ipcam.jid == mainCam.jid){
+        if (ipcam.jid == mainCam.jid) {
             this.tcpClient = tcpClient;
         }
         TCPConnectAsyncTask connectionTask = new TCPConnectAsyncTask(this, tcpClient, xmppConnection, ipcam.jid);
@@ -384,7 +441,8 @@ public class ControlActivity extends BaseActivity {
 //                String name = presence.getFrom().split("/")[0];
 ////                String name = presence.getFrom();
 //                Log.d(TAG, "Presence message :" + presence.toString() + "From" + presence.getFrom());
-//                if (name.equals(connectTo) && !presence.isAvailable() && !ControlActivity.this
+//                if (name.equals(MoApplication.CONNECT_TO) && !presence.isAvailable() && !ControlActivity
+// .this
 //                        .isFinishing()) {
 //                    AlertDialog.Builder builder = new AlertDialog.Builder(ControlActivity.this);
 //                    builder.setMessage("cam_disconnection")
@@ -423,13 +481,27 @@ public class ControlActivity extends BaseActivity {
         }
     }
 
-    public static ByteBuffer str_to_bb(String msg){
+    public static ByteBuffer str_to_bb(String msg) {
         Charset charset = Charset.forName("UTF-8");
         CharsetEncoder encoder = charset.newEncoder();
-        try{
+        try {
             return encoder.encode(CharBuffer.wrap(msg));
-        }catch(Exception e){e.printStackTrace();}
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        registerReceiver(eventReceiver,eventFilter);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        unregisterReceiver(eventReceiver);
     }
 
 }

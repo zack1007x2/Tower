@@ -6,9 +6,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.PopupWindow;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -36,6 +38,7 @@ import org.droidplanner.android.fragments.SettingsFragment;
 import org.droidplanner.android.fragments.helpers.ApiListenerFragment;
 import org.droidplanner.android.utils.analytics.GAUtils;
 import org.droidplanner.android.utils.collection.BroadCastIntent;
+import org.droidplanner.android.utils.prefs.DRONE_MODE;
 import org.droidplanner.android.utils.prefs.DroidPlannerPrefs;
 import org.droidplanner.android.widgets.spinners.ModeAdapter;
 import org.droidplanner.android.widgets.spinners.SpinnerSelfSelect;
@@ -623,6 +626,21 @@ public class ActionBarTelemFragment extends ApiListenerFragment {
             initList();
         }
         flightModeTelem.forcedSetSelection(mode);
+        flightModeTelem.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                Intent act_intent = new Intent();
+                act_intent.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
+                act_intent.putExtra("mode", (int) DRONE_MODE.getDronePositionMap().getKey(position));
+                Log.d("Zack", "Sent broadCast MODE = "+(int)DRONE_MODE.getDronePositionMap().getKey(position));
+                getActivity().sendBroadcast(act_intent);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
 
     }
 

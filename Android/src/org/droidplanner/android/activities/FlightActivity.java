@@ -29,6 +29,7 @@ import com.MAVLink.common.msg_attitude;
 import com.MAVLink.common.msg_global_position_int;
 import com.MAVLink.common.msg_gps_raw_int;
 import com.MAVLink.common.msg_heartbeat;
+import com.MAVLink.common.msg_set_mode;
 import com.MAVLink.common.msg_sys_status;
 import com.MAVLink.common.msg_vfr_hud;
 import com.google.android.gms.common.ConnectionResult;
@@ -125,6 +126,15 @@ public class FlightActivity extends BaseActivity {
                     float dronieBearing = intent.getFloatExtra(AttributeEventExtra.EXTRA_MISSION_DRONIE_BEARING, -1);
                     if (dronieBearing != -1)
                         updateMapBearing(dronieBearing);
+                    break;
+
+                case BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION:
+
+                    curMode = intent.getIntExtra("mode",0);
+                    Log.d("Zack","Receive Intent MODE = "+curMode);
+                    String Msg = MoApplication.XMPPCommand.DRONE + msg_set_mode
+                            .MAVLINK_MSG_ID_SET_MODE + "@" + curMode;
+                    xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg);
                     break;
 
             }
@@ -541,8 +551,8 @@ public class FlightActivity extends BaseActivity {
     }
 
     private void login() {
-        username = getResources().getString(R.string.test_username);
-        password = getResources().getString(R.string.test_password);
+        username = MoApplication.USER_ID;
+        password = MoApplication.USER_PWD;
 
         settings.edit().putString(JID_FIELD, username).commit();
 
@@ -590,7 +600,7 @@ public class FlightActivity extends BaseActivity {
 
     private void receiveXMPPMessage(Chat chat, final Message message) {
         String content = message.getBody();
-        Log.e("Ray", "receive XmppMessage from " + chat.getParticipant());
+//        Log.e("Ray", "receive XmppMessage from " + chat.getParticipant());
         if (content == null) {
             return;
         }
@@ -608,7 +618,7 @@ public class FlightActivity extends BaseActivity {
             if(!fragmentManager.findFragmentById(R.id.flightActionsFragment).isHidden()){
                 fragmentManager.beginTransaction().hide(flightActions).commit();
             }
-            Log.d("Zack",content);
+//            Log.d("Zack",content);
             Parser drone_parser = new Parser();
             String[] pktArr = content.split(MoApplication.XMPPCommand.DRONE + "@FROM_DRONE");
             for (int i = 0; i < pktArr.length; i++) {

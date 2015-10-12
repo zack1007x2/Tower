@@ -29,7 +29,7 @@ public class DRONE_MODE {
 
 
     public static HashBiMap getDronePositionMap(){
-        if(mDronePositionMap==null){
+        if(mDronePositionMap==null||mDronePositionMap.keySet().size()!=15){
             mDronePositionMap = new HashBiMap();
             mDronePositionMap.put(MODE_STABLE,0);
             mDronePositionMap.put(MODE_ACRO,1);

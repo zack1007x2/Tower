@@ -3,8 +3,5 @@
     <!--<string name="test_username">test99@128.199.174.175</string>-->
     <!--<string name="test_password">test</string>-->
 
-    <string name="test_username">piuser3@xmpp.moremote.com</string>
-    <string name="test_password">piuser3</string>
-    <string name="connect_to">piuser300@xmpp.moremote.com</string>
 
 </resources>
