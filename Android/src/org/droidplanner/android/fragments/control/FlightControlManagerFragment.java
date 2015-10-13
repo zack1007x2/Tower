@@ -27,6 +27,8 @@ public class FlightControlManagerFragment extends ApiListenerFragment {
 		boolean isSlidingUpPanelEnabled(Drone drone);
 	}
 
+	private boolean isxmppAvaliable;
+
 	private static final IntentFilter eventFilter = new IntentFilter();
     static {
         eventFilter.addAction(AttributeEvent.TYPE_UPDATED);
@@ -46,10 +48,17 @@ public class FlightControlManagerFragment extends ApiListenerFragment {
                     selectActionsBar(type == null ? -1 : type.getDroneType());
                     break;
 				case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE:
-					selectActionsBar(Type.TYPE_COPTER);
+					if(!isxmppAvaliable){
+						isxmppAvaliable = true;
+						selectActionsBar(Type.TYPE_COPTER);
+					}
 					break;
 				case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE:
-					selectActionsBar(-1);
+					if(isxmppAvaliable){
+						selectActionsBar(-1);
+						isxmppAvaliable = false;
+					}
+
 					break;
 			}
 		}
@@ -88,7 +97,6 @@ public class FlightControlManagerFragment extends ApiListenerFragment {
 		Fragment actionsBarFragment;
 		switch (droneType) {
 		case Type.TYPE_COPTER:
-			Log.d("Zack","selectActionsBar COPTER");
 			actionsBarFragment = new CopterFlightControlFragment();
 			break;
 

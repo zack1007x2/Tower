@@ -44,6 +44,8 @@ public class TelemetryFragment extends ApiListenerFragment {
         eventFilter.addAction(AttributeEvent.STATE_UPDATED);
         eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_ATTITUDE);
         eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_SPEED);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE);
     }
 
     /**
@@ -88,6 +90,10 @@ public class TelemetryFragment extends ApiListenerFragment {
                     break;
                 case BroadCastIntent.PROPERTY_DRONE_SPEED:
                     onSpeedUpdate(((SuperUI) getActivity()).mDroneModel);
+                    break;
+                case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE:
+                    break;
+                case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE:
                     break;
             }
         }

@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,6 +42,7 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
 
     private static final String ACTION_FLIGHT_ACTION_BUTTON = "Copter flight action button";
     private int curMode = -1;
+    private int curState = -1;
 
     private boolean isConnected, isflaying, isArmed;
 
@@ -67,7 +67,7 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
-            Log.d("Zack","ACTION = "+action);
+//            Log.d("Zack","ACTION = "+action);
             switch (action) {
                 case AttributeEvent.STATE_ARMING:
                 case AttributeEvent.STATE_CONNECTED:
@@ -567,40 +567,16 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
         if (isConnected) {
             if (isArmed) {
                 if (isflaying) {
-                    Log.d("Zack","setupButtonsForFlying");
-                    setupButtonsForFlying();
-                    switch (curMode) {
-                        case DRONE_MODE.MODE_AUTO:
-                            autoBtn.setActivated(true);
-                            break;
+                        setupButtonsForFlying();
 
-                        case DRONE_MODE.MODE_GUIDED:
-                            final Drone drone = getDrone();
-                            final GuidedState guidedState = drone.getAttribute(AttributeType.GUIDED_STATE);
-                            final FollowState followState = drone.getAttribute(AttributeType.FOLLOW_STATE);
-                            if (guidedState.isInitialized() && !followState.isEnabled()) {
-                                pauseBtn.setActivated(true);
-                            }
-                            break;
-
-                        case DRONE_MODE.MODE_RTL:
-                            homeBtn.setActivated(true);
-                            break;
-
-                        case DRONE_MODE.MODE_LAND:
-                            landBtn.setActivated(true);
-                            break;
-                        default:
-                            break;
-                    }
                 } else {
-                    setupButtonsForArmed();
+                        setupButtonsForArmed();
                 }
             } else {
-                setupButtonsForDisarmed();
+                    setupButtonsForDisarmed();
             }
         } else {
-            setupButtonsForDisconnected();
+                setupButtonsForDisconnected();
         }
 
     }

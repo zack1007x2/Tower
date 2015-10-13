@@ -74,6 +74,8 @@ public class ActionBarTelemFragment extends ApiListenerFragment {
         eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_SIGNAL);
         eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_GPS);
         eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE);
     }
 
     private final BroadcastReceiver eventReceiver = new BroadcastReceiver() {
@@ -142,6 +144,12 @@ public class ActionBarTelemFragment extends ApiListenerFragment {
                         curMode = intent.getIntExtra("Mode", -2);
                         updateFlightModeTelem(curMode);
                     }
+                    break;
+                case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE:
+                    showTelemBar();
+                    break;
+                case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE:
+                    hideTelemBar();
                     break;
                 default:
                     break;
