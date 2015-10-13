@@ -203,7 +203,7 @@ public abstract class DrawerNavigationUI extends SuperUI implements SlidingDrawe
     @Override
     public void onResume() {
         super.onResume();
-        updateNavigationDrawer();
+        updateNavigationDrawer(false);
     }
 
     /**
@@ -216,7 +216,7 @@ public abstract class DrawerNavigationUI extends SuperUI implements SlidingDrawe
         }
     }
 
-    private void updateNavigationDrawer() {
+    private void updateNavigationDrawer(boolean enable) {
         if (mNavViewsHolder == null) {
             return;
         }
@@ -230,7 +230,8 @@ public abstract class DrawerNavigationUI extends SuperUI implements SlidingDrawe
 
         setupNavigationEntry(navDrawerEntryId, mNavViewsHolder.mEditor, new Intent(context, EditorActivity.class));
 
-        setupNavigationEntry(navDrawerEntryId, mNavViewsHolder.mControl, new Intent(context, ControlActivity.class));
+        if(enable)
+            setupNavigationEntry(navDrawerEntryId, mNavViewsHolder.mControl, new Intent(context, ControlActivity.class));
 
         setupNavigationEntry(navDrawerEntryId, mNavViewsHolder.mLocator, new Intent(context, LocatorActivity.class));
 
@@ -345,5 +346,9 @@ public abstract class DrawerNavigationUI extends SuperUI implements SlidingDrawe
             mChecklist = (TextView) containerView.findViewById(R.id.navigation_checklist);
             mCalibration = (TextView) containerView.findViewById(R.id.navigation_calibration);
         }
+    }
+
+    protected void enableControlFrag(boolean enable){
+            updateNavigationDrawer(enable);
     }
 }

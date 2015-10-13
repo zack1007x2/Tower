@@ -7,6 +7,7 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,7 @@ import com.o3dr.services.android.lib.drone.property.Type;
 
 import org.droidplanner.android.R;
 import org.droidplanner.android.fragments.helpers.ApiListenerFragment;
+import org.droidplanner.android.utils.collection.BroadCastIntent;
 
 public class FlightControlManagerFragment extends ApiListenerFragment {
 
@@ -29,6 +31,8 @@ public class FlightControlManagerFragment extends ApiListenerFragment {
     static {
         eventFilter.addAction(AttributeEvent.TYPE_UPDATED);
         eventFilter.addAction(AttributeEvent.STATE_CONNECTED);
+		eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE);
+		eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE);
     }
 
 	private final BroadcastReceiver eventReceiver = new BroadcastReceiver() {
@@ -41,7 +45,13 @@ public class FlightControlManagerFragment extends ApiListenerFragment {
                     Type type = getDrone().getAttribute(AttributeType.TYPE);
                     selectActionsBar(type == null ? -1 : type.getDroneType());
                     break;
-            }
+				case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE:
+					selectActionsBar(Type.TYPE_COPTER);
+					break;
+				case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE:
+					selectActionsBar(-1);
+					break;
+			}
 		}
 	};
 
@@ -78,6 +88,7 @@ public class FlightControlManagerFragment extends ApiListenerFragment {
 		Fragment actionsBarFragment;
 		switch (droneType) {
 		case Type.TYPE_COPTER:
+			Log.d("Zack","selectActionsBar COPTER");
 			actionsBarFragment = new CopterFlightControlFragment();
 			break;
 
@@ -94,11 +105,24 @@ public class FlightControlManagerFragment extends ApiListenerFragment {
 			break;
 		}
 
-		fm.beginTransaction().replace(R.id.flight_actions_bar, actionsBarFragment).commitAllowingStateLoss();
+		fm.beginTransaction().replace(R.id.flight_actions_bar, actionsBarFragment)
+				.commitAllowingStateLoss();
 		header = (SlidingUpHeader) actionsBarFragment;
 	}
 
 	public boolean isSlidingUpPanelEnabled(Drone api) {
 		return header != null && header.isSlidingUpPanelEnabled(api);
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		getActivity().registerReceiver(eventReceiver, eventFilter);
+	}
+
+	@Override
+	public void onPause() {
+		super.onPause();
+		getActivity().unregisterReceiver(eventReceiver);
 	}
 }

@@ -51,16 +51,21 @@ import org.droidplanner.android.utils.Utils;
 import org.droidplanner.android.utils.collection.BroadCastIntent;
 import org.droidplanner.android.utils.prefs.AutoPanMode;
 import org.jivesoftware.smack.Chat;
+import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.MessageListener;
+import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.packet.Message;
+import org.jivesoftware.smack.packet.Presence;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import moremote.moapp.MoApplication;
 import moremote.moapp.activity.BaseActivity;
+import moremote.moapp.wrap.UserStatus;
 
-public class FlightActivity extends BaseActivity {
+public class FlightActivity extends BaseActivity implements ConnectionListener{
 
     private static final String TAG = FlightActivity.class.getSimpleName();
     private static final int GOOGLE_PLAY_SERVICES_REQUEST_CODE = 101;
@@ -84,6 +89,10 @@ public class FlightActivity extends BaseActivity {
     private MessageListener xmppMessageListener;
     private int curMode;
 
+    private HashMap<String, UserStatus> friends;
+
+    private boolean remote_status, receive_heartbeat;
+
 
     static {
         eventFilter.addAction(AttributeEvent.AUTOPILOT_ERROR);
@@ -94,6 +103,8 @@ public class FlightActivity extends BaseActivity {
         eventFilter.addAction(AttributeEvent.FOLLOW_START);
         eventFilter.addAction(AttributeEvent.MISSION_DRONIE_CREATED);
         eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_ATTITUDE);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_ARM_STATE_CHANGE);
     }
 
     private final BroadcastReceiver eventReceiver = new BroadcastReceiver() {
@@ -136,7 +147,12 @@ public class FlightActivity extends BaseActivity {
                             .MAVLINK_MSG_ID_SET_MODE + "@" + curMode;
                     xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg);
                     break;
+                case BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE:
 
+                    break;
+                case BroadCastIntent.PROPERTY_DRONE_ARM_STATE_CHANGE:
+
+                    break;
             }
         }
     };
@@ -239,6 +255,9 @@ public class FlightActivity extends BaseActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_flight);
+
+
+        friends = new HashMap<String, UserStatus>();
 
         fragmentManager = getSupportFragmentManager();
 
@@ -578,7 +597,22 @@ public class FlightActivity extends BaseActivity {
                         Toast.LENGTH_SHORT).show();
             }
         });
+        initFriendMap();
+    }
 
+    private void initFriendMap() {
+        xmppConnection.getRoster(friends);
+
+        UserStatus item = friends.get(MoApplication.CONNECT_TO);
+
+        if(item!=null){
+            Log.d("Zack","UserStatus: Type = "+item.getType());
+
+            if(item.getType().equals("available")){
+                remote_status = true;
+                onDroneConnectionUpdate();
+            }
+        }
     }
 
     public static String getMacAddress(Context context) {
@@ -618,22 +652,29 @@ public class FlightActivity extends BaseActivity {
             if(!fragmentManager.findFragmentById(R.id.flightActionsFragment).isHidden()){
                 fragmentManager.beginTransaction().hide(flightActions).commit();
             }
-//            Log.d("Zack",content);
-            Parser drone_parser = new Parser();
-            String[] pktArr = content.split(MoApplication.XMPPCommand.DRONE + "@FROM_DRONE");
-            for (int i = 0; i < pktArr.length; i++) {
-                if (pktArr[i].contains("[")) {
+            Log.d("Zack",content);
+            if(content.contains("@FROM_DRONE")){
+                Parser drone_parser = new Parser();
+                String[] pktArr = content.split(MoApplication.XMPPCommand.DRONE + "@FROM_DRONE");
+                for (int i = 0; i < pktArr.length; i++) {
+                    if (pktArr[i].contains("[")) {
 //                    Log.d("Zack","pktArr[i] = "+pktArr[i]);
-                    ByteBuffer pktBuffer = StringToByteBuffer(pktArr[i]);
-                    for (int j = 0; j < pktBuffer.limit(); j++) {
-                        MAVLinkPacket pkt = drone_parser.mavlink_parse_char(pktBuffer.get(j) &
-                                0x00ff);
-                        if (pkt != null) {
-                            handlePacket(pkt);
+                        ByteBuffer pktBuffer = StringToByteBuffer(pktArr[i]);
+                        for (int j = 0; j < pktBuffer.limit(); j++) {
+                            MAVLinkPacket pkt = drone_parser.mavlink_parse_char(pktBuffer.get(j) &
+                                    0x00ff);
+                            if (pkt != null) {
+                                handlePacket(pkt);
+                            }
                         }
                     }
                 }
+
+            }else if(content.contains(MoApplication.droneConnectionState.Disconnected)){
+                receive_heartbeat = false;
+                onDroneConnectionUpdate();
             }
+
         }
     }
 
@@ -677,7 +718,7 @@ public class FlightActivity extends BaseActivity {
                 msg_sys_status mSystemStatus = (msg_sys_status)pkt.unpack();
                 mDroneModel.setBatteryCurrent(mSystemStatus.current_battery / 100.0);
                 mDroneModel.setBatteryRemain(mSystemStatus.battery_remaining);
-                mDroneModel.setBatteryVoltage(mSystemStatus.voltage_battery);
+                mDroneModel.setBatteryVoltage(mSystemStatus.voltage_battery / 1000.0);
                 i.setAction(BroadCastIntent.PROPERTY_DRONE_BETTERY);
                 break;
             case msg_gps_raw_int.MAVLINK_MSG_ID_GPS_RAW_INT:
@@ -705,10 +746,12 @@ public class FlightActivity extends BaseActivity {
                 i.setAction(BroadCastIntent.PROPERTY_DRONE_SIGNAL);
                 break;
             case msg_heartbeat.MAVLINK_MSG_ID_HEARTBEAT:
+                receive_heartbeat = true;
+                onDroneConnectionUpdate();
                 msg_heartbeat mMode = (msg_heartbeat)pkt.unpack();
-                    curMode = (int)mMode.custom_mode;
-                    i.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE);
-                    i.putExtra("Mode",curMode);
+                curMode = (int)mMode.custom_mode;
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE);
+                i.putExtra("Mode",curMode);
                 break;
         }
         sendBroadcast(i);
@@ -730,4 +773,101 @@ public class FlightActivity extends BaseActivity {
 
     }
 
+    @Override
+    public void connected(XMPPConnection xmppConnection) {
+        Log.d("Zack","connected");
+        remote_status = true;
+        onDroneConnectionUpdate();
+    }
+
+    @Override
+    public void authenticated(XMPPConnection xmppConnection) {
+
+    }
+
+    @Override
+    public void connectionClosed() {
+        remote_status = false;
+        onDroneConnectionUpdate();
+    }
+
+    @Override
+    public void connectionClosedOnError(Exception e) {
+        remote_status = false;
+        onDroneConnectionUpdate();
+    }
+
+    @Override
+    public void reconnectingIn(int i) {
+
+    }
+
+    @Override
+    public void reconnectionSuccessful() {
+        remote_status = true;
+        onDroneConnectionUpdate();
+    }
+
+    @Override
+    public void reconnectionFailed(Exception e) {
+//        remote_status = false;
+        onDroneConnectionUpdate();
+    }
+
+    @Override
+    protected void updateFriendStatus(Presence presence) {
+        super.updateFriendStatus(presence);
+
+
+        String friendName = presence.getFrom().split("/")[0];
+        UserStatus item = friends.get(friendName);
+        if (item == null) {
+            item = new UserStatus();
+        }
+        item.setType(presence.getType().name());
+        item.setStatus(presence.getStatus());
+        friends.put(friendName, item);
+
+
+        if(friendName.equals(MoApplication.CONNECT_TO) && presence.getType().name().equals
+                (MoApplication.friendType.available)){
+            Log.d("Zack","834");
+            remote_status = true;
+            onDroneConnectionUpdate();
+
+        }else{
+            remote_status = false;
+            onDroneConnectionUpdate();
+        }
+
+    }
+
+    private void onDroneConnectionUpdate(){
+        boolean isConnect = remote_status && receive_heartbeat;
+        Log.d("Zack","onDroneConnectionUpdate "+isConnect+"  "+remote_status+"    " +
+                ""+receive_heartbeat);
+        if(isConnect){
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    enableControlFrag(true);
+                }
+            });
+            Intent i = new Intent();
+            i.setAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE);
+            sendBroadcast(i);
+        }else{
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    enableControlFrag(false);
+                }
+            });
+            Intent i = new Intent();
+            i.setAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE);
+            sendBroadcast(i);
+        }
+
+
+    }
 }

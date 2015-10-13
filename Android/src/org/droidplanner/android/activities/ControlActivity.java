@@ -24,7 +24,6 @@ import com.MAVLink.MAVLinkPacket;
 import com.MAVLink.Parser;
 import com.MAVLink.common.msg_attitude;
 import com.MAVLink.common.msg_heartbeat;
-import com.MAVLink.common.msg_rc_channels_override;
 import com.MAVLink.common.msg_set_mode;
 
 import org.droidplanner.android.R;
@@ -35,8 +34,11 @@ import org.droidplanner.android.utils.prefs.DRONE_MODE;
 import org.droidplanner.android.widgets.CusJoystickView;
 import org.droidplanner.android.widgets.JoystickView;
 import org.jivesoftware.smack.Chat;
+import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.MessageListener;
+import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.packet.Message;
+import org.jivesoftware.smack.packet.Presence;
 
 import java.net.MulticastSocket;
 import java.nio.ByteBuffer;
@@ -48,13 +50,14 @@ import java.util.HashMap;
 import moremote.moapp.IPCam;
 import moremote.moapp.MoApplication;
 import moremote.moapp.asynctask.TCPConnectAsyncTask;
+import moremote.moapp.wrap.UserStatus;
 import moremote.p2p.TCPClient;
 import moremote.relay.RelayClient;
 import moremote.relay.RelayConnectionListener;
 import moremote.surface.MyGLSurfaceView;
 
 
-public class ControlActivity extends JoystickControlActivity {
+public class ControlActivity extends JoystickControlActivity implements ConnectionListener{
 
     private final static String TAG = AccountActivity.class.getSimpleName();
 
@@ -71,6 +74,10 @@ public class ControlActivity extends JoystickControlActivity {
     private RelayClient relayClient;
     public MulticastSocket socket;
     public Button bt_streaming;
+    protected TextView tvRL, tvFB, tvPower, tvRotate;
+    private boolean remote_status;
+
+    private HashMap<String, UserStatus> friends;
 
 
     private final static IntentFilter eventFilter = new IntentFilter();
@@ -91,19 +98,8 @@ public class ControlActivity extends JoystickControlActivity {
                             ("mode",0));
                     String Msg_Mode = MsgTitle+ msg_set_mode
                             .MAVLINK_MSG_ID_SET_MODE + "@" + cur_mode;
-                    Log.d("Zack",Msg_Mode);
                     xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg_Mode);
                     break;
-
-//                case BroadCastIntent.PROPERTY_DRONE_RC_OVERRIDE_ACTION:
-//                    msg_rc_channels_override cmd = (msg_rc_channels_override) intent.getSerializableExtra("rc_cmd");
-//                    String Msg_RC = MsgTitle+msg_rc_channels_override
-//                            .MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE+ "@"+cmd.chan1_raw+
-//                            "@"+cmd.chan2_raw+ "@"+cmd.chan3_raw+ "@"+cmd.chan4_raw+ "@"+cmd.chan5_raw+
-//                            "@"+cmd.chan6_raw+ "@"+cmd.chan7_raw+"@"+cmd.chan8_raw;
-//                    Log.d("Zack",Msg_RC);
-//                    xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg_RC);
-//                    break;
             }
         }
     };
@@ -132,7 +128,7 @@ public class ControlActivity extends JoystickControlActivity {
             getSupportFragmentManager().beginTransaction().add(R.id.droneshare_control, droneShare).commit();
         }
         initView();
-        DoAfterSuccess();
+        xmppInit();
     }
 
     private void initView() {
@@ -148,6 +144,8 @@ public class ControlActivity extends JoystickControlActivity {
                 .DEFAULT_LOOP_INTERVAL);
 
         joystick_right.setOnJoystickMoveListener(mRightOnJoystickMoveListener, JoystickView.DEFAULT_LOOP_INTERVAL);
+
+        friends = new HashMap<String, UserStatus>();
 
 
         mSpinnerMode = (Spinner) findViewById(R.id.spinnerMode);
@@ -193,9 +191,20 @@ public class ControlActivity extends JoystickControlActivity {
     }
 
 
-    private void DoAfterSuccess() {
+    private void xmppInit() {
         createChat();
         DecoderInitial();
+
+        xmppConnection.getRoster(friends);
+
+        UserStatus item = friends.get(MoApplication.CONNECT_TO);
+
+        Log.d("Zack","UserStatus: Status = "+item.getStatus()+"    Type = "+item.getType());
+
+        if(item.getType().equals("available")){
+            remote_status = true;
+            enableControlFrag(true);
+        }
 
         mainCam = new IPCam(MoApplication.CONNECT_TO, surfaceView, xmppConnection, ipcamCount++);
         mainCam.setPlayButton(bt_streaming);
@@ -432,34 +441,29 @@ public class ControlActivity extends JoystickControlActivity {
         TCPConnectAsyncTask connectionTask = new TCPConnectAsyncTask(this, tcpClient, xmppConnection, ipcam.jid);
         connectionTask.execute();
     }
-//
-//    @Override
-//    protected void updateFriendStatus(final Presence presence) {
-//        runOnUiThread(new Runnable() {
-//            @Override
-//            public void run() {
-//                String name = presence.getFrom().split("/")[0];
-////                String name = presence.getFrom();
-//                Log.d(TAG, "Presence message :" + presence.toString() + "From" + presence.getFrom());
-//                if (name.equals(MoApplication.CONNECT_TO) && !presence.isAvailable() && !ControlActivity
-// .this
-//                        .isFinishing()) {
-//                    AlertDialog.Builder builder = new AlertDialog.Builder(ControlActivity.this);
-//                    builder.setMessage("cam_disconnection")
-//                            .setPositiveButton("submit", new DialogInterface.OnClickListener() {
-//                                public void onClick(DialogInterface dialog, int id) {
-//                                    dialog.dismiss();
-//                                    finish();
-//                                }
-//                            });
-//
-//                    // Create the AlertDialog object and display
-//                    dialog = builder.create();
-//                    dialog.show();
-//                }
-//            }
-//        });
-//    }
+    @Override
+    protected void updateFriendStatus(final Presence presence) {
+        String friendName = presence.getFrom().split("/")[0];
+        UserStatus item = friends.get(friendName);
+        if (item == null) {
+            item = new UserStatus();
+        }
+        item.setType(presence.getType().name());
+        item.setStatus(presence.getStatus());
+        friends.put(friendName, item);
+
+        if(friendName.equals(MoApplication.CONNECT_TO) && presence.getType().name().equals
+                (MoApplication.friendType.available)){
+            remote_status = true;
+            enableControlFrag(true);
+        }else{
+            remote_status = false;
+        }
+
+
+
+
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -504,4 +508,38 @@ public class ControlActivity extends JoystickControlActivity {
         unregisterReceiver(eventReceiver);
     }
 
+    @Override
+    public void connected(XMPPConnection xmppConnection) {
+
+    }
+
+    @Override
+    public void authenticated(XMPPConnection xmppConnection) {
+
+    }
+
+    @Override
+    public void connectionClosed() {
+
+    }
+
+    @Override
+    public void connectionClosedOnError(Exception e) {
+
+    }
+
+    @Override
+    public void reconnectingIn(int i) {
+
+    }
+
+    @Override
+    public void reconnectionSuccessful() {
+
+    }
+
+    @Override
+    public void reconnectionFailed(Exception e) {
+
+    }
 }

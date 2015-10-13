@@ -1,7 +1,6 @@
 package org.droidplanner.android.fragments.control;
 
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,7 +10,6 @@ import com.o3dr.android.client.Drone;
 
 import org.droidplanner.android.R;
 import org.droidplanner.android.activities.helpers.SuperUI;
-import org.droidplanner.android.fragments.control.FlightControlManagerFragment;
 
 /**
  * Provides action buttons functionality for generic drone type.

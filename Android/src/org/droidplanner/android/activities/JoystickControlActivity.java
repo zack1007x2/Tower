@@ -1,7 +1,6 @@
 package org.droidplanner.android.activities;
 
 import android.util.Log;
-import android.widget.TextView;
 
 import com.MAVLink.common.msg_rc_channels_override;
 
@@ -21,7 +20,6 @@ public class JoystickControlActivity extends BaseActivity {
     protected short cur_lift, cur_rotate, ch1, ch2;
     protected Thread defaultLoop;
     protected boolean isTouching_left, isTouching_right;
-    protected TextView tvRL, tvFB, tvPower, tvRotate;
     protected boolean startUp, isLock;
 
     private String MsgTitle = MoApplication.XMPPCommand.DRONE;

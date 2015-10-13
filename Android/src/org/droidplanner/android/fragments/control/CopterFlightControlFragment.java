@@ -4,8 +4,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,7 +21,6 @@ import com.o3dr.services.android.lib.drone.property.GuidedState;
 import com.o3dr.services.android.lib.drone.property.State;
 import com.o3dr.services.android.lib.drone.property.VehicleMode;
 import com.o3dr.services.android.lib.gcs.follow.FollowState;
-import com.o3dr.services.android.lib.gcs.follow.FollowType;
 
 import org.droidplanner.android.R;
 import org.droidplanner.android.activities.FlightActivity;
@@ -29,11 +28,10 @@ import org.droidplanner.android.activities.helpers.SuperUI;
 import org.droidplanner.android.dialogs.SlideToUnlockDialog;
 import org.droidplanner.android.dialogs.SupportYesNoDialog;
 import org.droidplanner.android.dialogs.SupportYesNoWithPrefsDialog;
-import org.droidplanner.android.dialogs.YesNoDialog;
-import org.droidplanner.android.dialogs.YesNoWithPrefsDialog;
-import org.droidplanner.android.fragments.helpers.ApiListenerFragment;
 import org.droidplanner.android.proxy.mission.MissionProxy;
 import org.droidplanner.android.utils.analytics.GAUtils;
+import org.droidplanner.android.utils.collection.BroadCastIntent;
+import org.droidplanner.android.utils.prefs.DRONE_MODE;
 import org.droidplanner.android.utils.prefs.DroidPlannerPrefs;
 
 /**
@@ -44,6 +42,9 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
     private static final String TAG = CopterFlightControlFragment.class.getSimpleName();
 
     private static final String ACTION_FLIGHT_ACTION_BUTTON = "Copter flight action button";
+    private int curMode = -1;
+
+    private boolean isConnected, isflaying, isArmed;
 
     private static final IntentFilter eventFilter = new IntentFilter();
 
@@ -57,12 +58,16 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
         eventFilter.addAction(AttributeEvent.FOLLOW_STOP);
         eventFilter.addAction(AttributeEvent.FOLLOW_UPDATE);
         eventFilter.addAction(AttributeEvent.MISSION_DRONIE_CREATED);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE);
     }
 
     private final BroadcastReceiver eventReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
+            Log.d("Zack","ACTION = "+action);
             switch (action) {
                 case AttributeEvent.STATE_ARMING:
                 case AttributeEvent.STATE_CONNECTED:
@@ -133,6 +138,24 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
                         }
                     }
                     break;
+                case BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE:
+                    if(intent.getIntExtra("Mode",-2)!=curMode){
+                        curMode = intent.getIntExtra("Mode", -2);
+                        UpdateXmppControlButton();
+                    }
+                    break;
+                case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE:
+                    isConnected = true;
+                    isflaying = true;
+                    isArmed = true;
+                    UpdateXmppControlButton();
+
+                    break;
+                case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE:
+                    isConnected = false;
+                    UpdateXmppControlButton();
+
+                    break;
             }
         }
     };
@@ -151,6 +174,7 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
     private Button autoBtn;
 
     private int orangeColor;
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -224,78 +248,142 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
     public void onClick(View v) {
         HitBuilders.EventBuilder eventBuilder = new HitBuilders.EventBuilder()
                 .setCategory(GAUtils.Category.FLIGHT);
+        if(!isConnected){
+            final Drone drone = getDrone();
+            switch (v.getId()) {
+                case R.id.mc_connectBtn:
+                    ((SuperUI) getActivity()).toggleDroneConnection();
+                    break;
 
-        final Drone drone = getDrone();
-        switch (v.getId()) {
-            case R.id.mc_connectBtn:
-                ((SuperUI) getActivity()).toggleDroneConnection();
-                break;
+                case R.id.mc_armBtn:
+                    getArmingConfirmation();
+                    eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel("Arm");
+                    break;
 
-            case R.id.mc_armBtn:
-                getArmingConfirmation();
-                eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel("Arm");
-                break;
+                case R.id.mc_disarmBtn:
+                    getDrone().arm(false);
+                    eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel("Disarm");
+                    break;
 
-            case R.id.mc_disarmBtn:
-                getDrone().arm(false);
-                eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel("Disarm");
-                break;
+                case R.id.mc_land:
+                    getDrone().changeVehicleMode(VehicleMode.COPTER_LAND);
+                    eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel(VehicleMode
+                            .COPTER_LAND.getLabel());
+                    break;
 
-            case R.id.mc_land:
-                getDrone().changeVehicleMode(VehicleMode.COPTER_LAND);
-                eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel(VehicleMode
-                        .COPTER_LAND.getLabel());
-                break;
+                case R.id.mc_takeoff:
+                    getTakeOffConfirmation();
+                    eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel("Takeoff");
+                    break;
 
-            case R.id.mc_takeoff:
-                getTakeOffConfirmation();
-                eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel("Takeoff");
-                break;
+                case R.id.mc_homeBtn:
+                    getDrone().changeVehicleMode(VehicleMode.COPTER_RTL);
+                    eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel(VehicleMode.COPTER_RTL
+                            .getLabel());
+                    break;
 
-            case R.id.mc_homeBtn:
-                getDrone().changeVehicleMode(VehicleMode.COPTER_RTL);
-                eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel(VehicleMode.COPTER_RTL
-                        .getLabel());
-                break;
+                case R.id.mc_pause: {
+                    final FollowState followState = drone.getAttribute(AttributeType.FOLLOW_STATE);
+                    if (followState.isEnabled()) {
+                        drone.disableFollowMe();
+                    }
 
-            case R.id.mc_pause: {
-                final FollowState followState = drone.getAttribute(AttributeType.FOLLOW_STATE);
-                if (followState.isEnabled()) {
-                    drone.disableFollowMe();
+                    drone.pauseAtCurrentLocation();
+                    eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel("Pause");
+                    break;
                 }
 
-                drone.pauseAtCurrentLocation();
-                eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel("Pause");
-                break;
+                case R.id.mc_autoBtn:
+                    getDrone().changeVehicleMode(VehicleMode.COPTER_AUTO);
+                    eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel(VehicleMode.COPTER_AUTO.getLabel());
+                    break;
+
+                case R.id.mc_TakeoffInAutoBtn:
+                    getTakeOffInAutoConfirmation();
+                    eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel(VehicleMode.COPTER_AUTO.getLabel());
+                    break;
+
+                case R.id.mc_follow:
+                    toggleFollowMe();
+                    break;
+
+                case R.id.mc_dronieBtn:
+                    getDronieConfirmation();
+                    eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel("Dronie uploaded");
+                    break;
+
+                default:
+                    eventBuilder = null;
+                    break;
             }
 
-            case R.id.mc_autoBtn:
-                getDrone().changeVehicleMode(VehicleMode.COPTER_AUTO);
-                eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel(VehicleMode.COPTER_AUTO.getLabel());
-                break;
+            if (eventBuilder != null) {
+                GAUtils.sendEvent(eventBuilder);
+            }
+        }else{
+            Intent i = new Intent();
+            switch (v.getId()) {
+                case R.id.mc_armBtn:
+                    //TODO unlock
+                    i.setAction(BroadCastIntent.PROPERTY_DRONE_ARM_STATE_CHANGE);
+                    i.putExtra("mode", true);
+                    getActivity().sendBroadcast(i);
 
-            case R.id.mc_TakeoffInAutoBtn:
-                getTakeOffInAutoConfirmation();
-                eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel(VehicleMode.COPTER_AUTO.getLabel());
-                break;
+                    break;
 
-            case R.id.mc_follow:
-                toggleFollowMe();
-                break;
+                case R.id.mc_disarmBtn:
+                    //TODO lock
+                    i.setAction(BroadCastIntent.PROPERTY_DRONE_ARM_STATE_CHANGE);
+                    i.putExtra("mode", false);
+                    getActivity().sendBroadcast(i);
 
-            case R.id.mc_dronieBtn:
-                getDronieConfirmation();
-                eventBuilder.setAction(ACTION_FLIGHT_ACTION_BUTTON).setLabel("Dronie uploaded");
-                break;
+                    break;
 
-            default:
-                eventBuilder = null;
-                break;
+                case R.id.mc_land:
+                    //TODO change mode Land;
+                    i.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
+                    i.putExtra("mode", DRONE_MODE.MODE_LAND);
+                    getActivity().sendBroadcast(i);
+
+                    break;
+
+                case R.id.mc_takeoff:
+                    //TODO takeoff
+                    break;
+
+                case R.id.mc_homeBtn:
+                    //TODO change mode RTL;
+                    i.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
+                    i.putExtra("mode", DRONE_MODE.MODE_RTL);
+                    getActivity().sendBroadcast(i);
+                    break;
+
+                case R.id.mc_pause: {
+                    break;
+                }
+
+                case R.id.mc_autoBtn:
+                    //TODO change mode AUTO;
+                    i.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
+                    i.putExtra("mode", DRONE_MODE.MODE_AUTO);
+                    getActivity().sendBroadcast(i);
+                    break;
+
+                case R.id.mc_TakeoffInAutoBtn:
+                    break;
+
+                case R.id.mc_follow:
+                    break;
+
+                case R.id.mc_dronieBtn:
+                    break;
+
+                default:
+                    break;
+            }
+
         }
 
-        if (eventBuilder != null) {
-            GAUtils.sendEvent(eventBuilder);
-        }
 
     }
 
@@ -471,5 +559,61 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
 
         final State droneState = drone.getAttribute(AttributeType.STATE);
         return droneState.isArmed() && droneState.isFlying();
+    }
+
+
+    private void UpdateXmppControlButton(){
+
+        if (isConnected) {
+            if (isArmed) {
+                if (isflaying) {
+                    Log.d("Zack","setupButtonsForFlying");
+                    setupButtonsForFlying();
+                    switch (curMode) {
+                        case DRONE_MODE.MODE_AUTO:
+                            autoBtn.setActivated(true);
+                            break;
+
+                        case DRONE_MODE.MODE_GUIDED:
+                            final Drone drone = getDrone();
+                            final GuidedState guidedState = drone.getAttribute(AttributeType.GUIDED_STATE);
+                            final FollowState followState = drone.getAttribute(AttributeType.FOLLOW_STATE);
+                            if (guidedState.isInitialized() && !followState.isEnabled()) {
+                                pauseBtn.setActivated(true);
+                            }
+                            break;
+
+                        case DRONE_MODE.MODE_RTL:
+                            homeBtn.setActivated(true);
+                            break;
+
+                        case DRONE_MODE.MODE_LAND:
+                            landBtn.setActivated(true);
+                            break;
+                        default:
+                            break;
+                    }
+                } else {
+                    setupButtonsForArmed();
+                }
+            } else {
+                setupButtonsForDisarmed();
+            }
+        } else {
+            setupButtonsForDisconnected();
+        }
+
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        getActivity().registerReceiver(eventReceiver,eventFilter);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        getActivity().unregisterReceiver(eventReceiver);
     }
 }

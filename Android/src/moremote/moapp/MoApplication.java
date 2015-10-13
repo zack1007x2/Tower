@@ -69,6 +69,18 @@ public class MoApplication extends Application {
         public static final int AndroidCam = 0;
         public static final int LinuxCam = 1;
     }
+
+    public static class friendType{
+        public static final String available = "available";
+        public static final String unavailable = "unavailable";
+    }
+
+
+    public static class droneConnectionState{
+        public static final String Connected = "drone_connected";
+        public static final String Disconnected = "drone_disconnected";
+    }
+
     public static enum NatType {
         NAT_ERROR(-1),
         NAT_NORMAL(0),
