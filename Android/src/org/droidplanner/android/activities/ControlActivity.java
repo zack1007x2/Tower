@@ -102,10 +102,13 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
                 case BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION:
 
                     cur_mode =intent.getIntExtra("mode",0);
-                    Log.d("Zack","Receive Intent MODE = "+cur_mode);
                     String Msg_Mode = MsgTitle+ msg_set_mode
                             .MAVLINK_MSG_ID_SET_MODE + "@" + cur_mode;
                     xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg_Mode);
+                    break;
+                case BroadCastIntent.PROPERTY_DRONE_SENT_MODE_FROM_FLIGHT:
+                    Log.d("Zack","PROPERTY_DRONE_SENT_MODE_FROM_FLIGHT");
+
                     break;
             }
         }
@@ -164,6 +167,7 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
         ModeItem.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mSpinnerMode.setAdapter(ModeItem);
 
+
         mSpinnerMode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -186,6 +190,14 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
             }
 
         });
+
+        int modeReceive = getIntent().getIntExtra("mode",-1);
+        if(modeReceive!=-1){
+            cur_mode = modeReceive;
+            mSpinnerMode.setSelection((int)DRONE_MODE.getInstance().getDronePositionMap().getKey
+                    (modeReceive));
+        }
+
         surfaceView = (MyGLSurfaceView) findViewById(R.id.GLSurfaceView);
         surfaceView.setBackgroundColor(Color.BLACK);
     }

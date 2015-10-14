@@ -1,5 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<resources>
+<resources
+    tools:ignore="MissingTranslation" xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Do not translate the following strings -->
     <string name="app_title" translatable="false">Tower</string>

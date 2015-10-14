@@ -16,6 +16,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -752,6 +753,7 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
 
     private void setupMap() {
         // Make sure the map is initialized
+        Log.d("Zack","SETUP MAP");
         MapsInitializer.initialize(getActivity().getApplicationContext());
 
         getMapAsync(new OnMapReadyCallback() {

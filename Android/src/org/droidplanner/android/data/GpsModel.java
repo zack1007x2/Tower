@@ -55,7 +55,7 @@ public class GpsModel {
     }
 
     public void setGpsEph(double mGpsEph) {
-        this.mGpsEph = mGpsEph;
+        this.mGpsEph = (mGpsEph/100.0);
     }
 
     public int getSatCount() {

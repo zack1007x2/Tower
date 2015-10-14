@@ -13,6 +13,7 @@ android {
         targetSdkVersion 22
         versionCode 30106
         versionName getGitVersion()
+        multiDexEnabled true
     }
 
     compileOptions {
@@ -59,6 +60,13 @@ android {
             storePassword getAppKeystorePassword()
             keyAlias getAppKey()
             keyPassword getAppKeyPassword()
+        }
+
+        debug {
+            storeFile file("/Users/Zack/Documents/ssh/debug.keystore")
+            storePassword "123456"
+            keyAlias "debug"
+            keyPassword "123456"
         }
     }
 

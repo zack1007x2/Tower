@@ -751,6 +751,7 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
                 onDroneConnectionUpdate();
                 msg_heartbeat mMode = (msg_heartbeat)pkt.unpack();
                 curMode = (int)mMode.custom_mode;
+                MoApplication.CUR_MODE = curMode;
                 i.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE);
                 i.putExtra("Mode",curMode);
                 break;

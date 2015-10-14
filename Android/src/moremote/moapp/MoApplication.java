@@ -31,6 +31,8 @@ public class MoApplication extends Application {
     public static final String USER_PWD = "piuser3";
     public static final String CONNECT_TO = "piuser300@xmpp.moremote.com";
 
+    public static int CUR_MODE;
+
 	
 	public static class XMPPCommand {
 		public static final String STREAM_START 	= "streamstart";
