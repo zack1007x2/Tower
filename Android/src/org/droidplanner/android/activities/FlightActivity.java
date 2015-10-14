@@ -142,7 +142,7 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
                 case BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION:
 
                     curMode = intent.getIntExtra("mode",0);
-                    Log.d("Zack","Receive Intent MODE = "+curMode);
+                    Log.d("Zack","Flight Receive Intent MODE = "+curMode);
                     String Msg = MoApplication.XMPPCommand.DRONE + msg_set_mode
                             .MAVLINK_MSG_ID_SET_MODE + "@" + curMode;
                     xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg);
@@ -649,10 +649,11 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
             });
             return;
         } else if (content.contains(MoApplication.XMPPCommand.DRONE)) {
-            if(!fragmentManager.findFragmentById(R.id.flightActionsFragment).isHidden()){
-                fragmentManager.beginTransaction().hide(flightActions).commit();
+            if(fragmentManager.findFragmentById(R.id.flightActionsFragment)!=null){
+                if(!fragmentManager.findFragmentById(R.id.flightActionsFragment).isHidden()){
+                    fragmentManager.beginTransaction().hide(flightActions).commit();
+                }
             }
-            Log.d("Zack",content);
             if(content.contains("@FROM_DRONE")){
                 Parser drone_parser = new Parser();
                 String[] pktArr = content.split(MoApplication.XMPPCommand.DRONE + "@FROM_DRONE");
@@ -831,7 +832,6 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
 
         if(friendName.equals(MoApplication.CONNECT_TO) && presence.getType().name().equals
                 (MoApplication.friendType.available)){
-            Log.d("Zack","834");
             remote_status = true;
             onDroneConnectionUpdate();
 
@@ -844,8 +844,7 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
 
     private void onDroneConnectionUpdate(){
         boolean isConnect = remote_status && receive_heartbeat;
-        Log.d("Zack","onDroneConnectionUpdate "+isConnect+"  "+remote_status+"    " +
-                ""+receive_heartbeat);
+
         if(isConnect){
             runOnUiThread(new Runnable() {
                 @Override
@@ -869,5 +868,17 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
         }
 
 
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver(eventReceiver);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        registerReceiver(eventReceiver, eventFilter);
     }
 }

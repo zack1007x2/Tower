@@ -10,7 +10,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.PopupWindow;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -232,6 +231,7 @@ public class ActionBarTelemFragment extends ApiListenerFragment {
 
         flightModeTelem = (SpinnerSelfSelect) view.findViewById(R.id.bar_flight_mode);
         modeAdapter = new ModeAdapter(context, R.layout.spinner_drop_down_flight_mode);
+        initList();
 
         appPrefs = new DroidPlannerPrefs(context);
     }
@@ -630,25 +630,10 @@ public class ActionBarTelemFragment extends ApiListenerFragment {
 
 
     private void updateFlightModeTelem(int mode) {
-        if(modeAdapter.isEmpty()){
-            initList();
-        }
+        Log.d("Zack", "updateFlightModeTelem = " + mode);
+        mode = (int)DRONE_MODE.getInstance().getDronePositionMap().getValue(mode);
         flightModeTelem.forcedSetSelection(mode);
-        flightModeTelem.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                Intent act_intent = new Intent();
-                act_intent.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
-                act_intent.putExtra("mode", (int) DRONE_MODE.getDronePositionMap().getKey(position));
-                Log.d("Zack", "Sent broadCast MODE = "+(int)DRONE_MODE.getDronePositionMap().getKey(position));
-                getActivity().sendBroadcast(act_intent);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
+        flightModeTelem.setClickable(false);
 
     }
 

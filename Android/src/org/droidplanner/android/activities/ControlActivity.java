@@ -22,13 +22,19 @@ import android.widget.Toast;
 
 import com.MAVLink.MAVLinkPacket;
 import com.MAVLink.Parser;
+import com.MAVLink.ardupilotmega.msg_radio;
 import com.MAVLink.common.msg_attitude;
+import com.MAVLink.common.msg_global_position_int;
+import com.MAVLink.common.msg_gps_raw_int;
 import com.MAVLink.common.msg_heartbeat;
 import com.MAVLink.common.msg_set_mode;
+import com.MAVLink.common.msg_sys_status;
+import com.MAVLink.common.msg_vfr_hud;
+import com.o3dr.services.android.lib.util.MathUtils;
 
 import org.droidplanner.android.R;
-import org.droidplanner.android.data.DroneModel;
 import org.droidplanner.android.fragments.XmppControlFragment;
+import org.droidplanner.android.utils.Utils;
 import org.droidplanner.android.utils.collection.BroadCastIntent;
 import org.droidplanner.android.utils.prefs.DRONE_MODE;
 import org.droidplanner.android.widgets.CusJoystickView;
@@ -63,7 +69,8 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
 
 
     private Spinner mSpinnerMode;
-    private int cur_mode = 0;
+    private int cur_mode = -1;
+    private int receive_mode = -1;
     private String MsgTitle = MoApplication.XMPPCommand.DRONE;
 
     private MessageListener xmppMessageListener;
@@ -94,8 +101,8 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
 
                 case BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION:
 
-                    cur_mode = (int) DRONE_MODE.getDronePositionMap().getValue(intent.getIntExtra
-                            ("mode",0));
+                    cur_mode =intent.getIntExtra("mode",0);
+                    Log.d("Zack","Receive Intent MODE = "+cur_mode);
                     String Msg_Mode = MsgTitle+ msg_set_mode
                             .MAVLINK_MSG_ID_SET_MODE + "@" + cur_mode;
                     xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg_Mode);
@@ -160,10 +167,17 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
         mSpinnerMode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                cur_mode = (int) DRONE_MODE.getDronePositionMap().getKey(position);
-                String Msg = MsgTitle + msg_set_mode
-                        .MAVLINK_MSG_ID_SET_MODE + "@" + cur_mode;
-                xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg);
+                Log.d("Zack","OnItemSelected POSITION "+position);
+                cur_mode = (int) DRONE_MODE.getInstance().getDronePositionMap().getKey(position);
+                Log.d("Zack","OnItemSelected "+cur_mode);
+//                String Msg = MsgTitle + msg_set_mode
+//                        .MAVLINK_MSG_ID_SET_MODE + "@" + cur_mode;
+//                xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg);
+                Intent mode_intent = new Intent();
+                mode_intent.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
+                mode_intent.putExtra("mode", cur_mode);
+                sendBroadcast(mode_intent);
+
             }
 
             @Override
@@ -174,10 +188,6 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
         });
         surfaceView = (MyGLSurfaceView) findViewById(R.id.GLSurfaceView);
         surfaceView.setBackgroundColor(Color.BLACK);
-    }
-
-    private Fragment getCurrentFragment() {
-        return getSupportFragmentManager().findFragmentById(R.id.droneshare_control);
     }
 
     @Override
@@ -251,11 +261,6 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
             tcpClient = null;
         }
 
-//        if (stopStreamAsyncTask != null) {
-//            stopStreamAsyncTask.cancel(true);
-//            stopStreamAsyncTask = null;
-//        }
-
         if (xmppMessageListener != null) {
             xmppConnection.removeMessageListener(xmppMessageListener);
             xmppMessageListener = null;
@@ -323,10 +328,6 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
             android.os.Message msg = new android.os.Message();
             msg.what = 0;
             alarmMsgHandler.sendMessage(msg);
-        } else if (content.contains(MoApplication.XMPPCommand.CAMERA_TYPE)) {
-//            Log.e("Ray","@#getCameraType in MainActivity");
-//            int cameraType = Integer.valueOf(content.split(":")[1]);
-//            this.cameraType = cameraType;
         } else if (content.contains(MoApplication.XMPPCommand.DRONE)) {
             Parser drone_parser = new Parser();
             String[] pktArr = content.split(MoApplication.XMPPCommand.DRONE + "@FROM_DRONE");
@@ -360,24 +361,67 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
 
     private void handlePacket(MAVLinkPacket pkt) {
         int msgId = pkt.unpack().msgid;
+        Intent i = new Intent();
         switch (msgId) {
             case msg_attitude.MAVLINK_MSG_ID_ATTITUDE:
-                msg_attitude msg = (msg_attitude) pkt.unpack();
-                DroneModel mDroneModel = DroneModel.getDroneModel();
-                mDroneModel.setRoll(msg.roll);
+                msg_attitude msg_atti = (msg_attitude) pkt.unpack();
+                mDroneModel.setRoll(Utils.fromRadToDeg(msg_atti.roll));
+                mDroneModel.setRollspeed(Utils.fromRadToDeg(msg_atti.rollspeed));
+                mDroneModel.setPitch(Utils.fromRadToDeg(msg_atti.pitch));
+                mDroneModel.setPitchspeed(Utils.fromRadToDeg(msg_atti.pitchspeed));
+                mDroneModel.setYaw(Utils.fromRadToDeg(msg_atti.yaw));
+                mDroneModel.setYawspeed(Utils.fromRadToDeg(msg_atti.yawspeed));
+                mDroneModel.setTime_boot_ms(msg_atti.time_boot_ms);
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_ATTITUDE);
+                break;
+            case msg_vfr_hud.MAVLINK_MSG_ID_VFR_HUD:
+                msg_vfr_hud msg_speed = (msg_vfr_hud) pkt.unpack();
+                mDroneModel.setAirSpeed(msg_speed.airspeed);
+                mDroneModel.setGroundSpeed(msg_speed.groundspeed);
+                mDroneModel.setVerticalSpeed(msg_speed.climb);
+                mDroneModel.setAlt(msg_speed.alt);
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_SPEED);
+                break;
+            case msg_sys_status.MAVLINK_MSG_ID_SYS_STATUS:
+                msg_sys_status mSystemStatus = (msg_sys_status)pkt.unpack();
+                mDroneModel.setBatteryCurrent(mSystemStatus.current_battery / 100.0);
+                mDroneModel.setBatteryRemain(mSystemStatus.battery_remaining);
+                mDroneModel.setBatteryVoltage(mSystemStatus.voltage_battery / 1000.0);
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_BETTERY);
+                break;
+            case msg_gps_raw_int.MAVLINK_MSG_ID_GPS_RAW_INT:
+                msg_gps_raw_int mGpsRaw = (msg_gps_raw_int)pkt.unpack();
+                mGpsModel.setGpsEph(mGpsRaw.eph);
+                mGpsModel.setFixType(mGpsRaw.fix_type);
+                mGpsModel.setSatCount(mGpsRaw.satellites_visible);
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_GPS);
+                break;
+            case msg_global_position_int.MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+                msg_global_position_int mGpsPosition = (msg_global_position_int)pkt.unpack();
+                mGpsModel.setPosition(mGpsPosition.lat / 1E7, mGpsPosition.lon / 1E7);
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_GPS);
+                break;
+            case msg_radio.MAVLINK_MSG_ID_RADIO:
+                msg_radio mRadio = (msg_radio)pkt.unpack();
+                mSignalModel.setFixed(mRadio.fixed);
+                mSignalModel.setNoise(mRadio.noise);
+                mSignalModel.setRemnoise(mRadio.remnoise);
+                mSignalModel.setRemrssi(mRadio.remrssi);
+                mSignalModel.setRssi(mRadio.rssi);
+                mSignalModel.setRxerrors(mRadio.rxerrors);
+                mSignalModel.setTxbuf(mRadio.txbuf);
+                mSignalModel.setSignalStrength(MathUtils.getSignalStrength(mSignalModel.getFadeMargin(), mSignalModel.getRemFadeMargin()));
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_SIGNAL);
                 break;
             case msg_heartbeat.MAVLINK_MSG_ID_HEARTBEAT:
-                msg_heartbeat msgHB = (msg_heartbeat) pkt.unpack();
-                final int cusMode = (int)msgHB.custom_mode;
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mSpinnerMode.setSelection((int) DRONE_MODE.getDronePositionMap().getValue(cusMode));
-                    }
-                });
+                msg_heartbeat mMode = (msg_heartbeat)pkt.unpack();
+                receive_mode = (int)mMode.custom_mode;
+                Log.d("Zack", "receive_mode = "+receive_mode);
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE);
+                i.putExtra("Mode",receive_mode);
                 break;
-
         }
+        sendBroadcast(i);
 
     }
 
@@ -458,11 +502,8 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
             enableControlFrag(true);
         }else{
             remote_status = false;
+            finish();
         }
-
-
-
-
     }
 
     @Override

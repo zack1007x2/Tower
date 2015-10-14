@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -67,7 +68,7 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
-//            Log.d("Zack","ACTION = "+action);
+            Log.d("Zack", "ACTION = " + action);
             switch (action) {
                 case AttributeEvent.STATE_ARMING:
                 case AttributeEvent.STATE_CONNECTED:
