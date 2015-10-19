@@ -20,17 +20,17 @@ public class DownloadMapboxMapActivity : AppCompatActivity() {
 
     val MAP_CACHE_ZOOM_LEVEL = 19
 
-    private val mapDownloader: MapDownloader by lazy(LazyThreadSafetyMode.NONE) {
-        val dpApp = application as DroidPlannerApp
-        dpApp.mapDownloader
+    private val mapDownloader: MapDownloader by Delegates.lazy {
+        val dpApp = getApplication() as DroidPlannerApp
+        dpApp.getMapDownloader()
     }
 
-    private val mapboxId: String by lazy(LazyThreadSafetyMode.NONE) {
-        GoogleMapPrefFragment.PrefManager.getMapboxId(applicationContext)
+    private val mapboxId: String by Delegates.lazy {
+        GoogleMapPrefFragment.PrefManager.getMapboxId(getApplicationContext())
     }
 
-    private val mapboxAccessToken: String by lazy(LazyThreadSafetyMode.NONE) {
-        GoogleMapPrefFragment.PrefManager.getMapboxAccessToken(applicationContext)
+    private val mapboxAccessToken: String by Delegates.lazy {
+        GoogleMapPrefFragment.PrefManager.getMapboxAccessToken(getApplicationContext())
     }
 
     private val mapDownloadListener = object : MapDownloaderListener {
@@ -42,7 +42,7 @@ public class DownloadMapboxMapActivity : AppCompatActivity() {
             when(status){
                 HttpURLConnection.HTTP_UNAUTHORIZED -> {
                     runOnUiThread {
-                        Toast.makeText(applicationContext, "Invalid mapbox credentials! Cancelling map download...",
+                        Toast.makeText(getApplicationContext(), "Invalid mapbox credentials! Cancelling map download...",
                                 Toast.LENGTH_LONG).show()
                         cancelMapDownload()
                     }
@@ -52,9 +52,9 @@ public class DownloadMapboxMapActivity : AppCompatActivity() {
 
         override fun initialCountOfFiles(numberOfFiles: Int) {
             runOnUiThread {
-                downloadProgressBar?.isIndeterminate = false
-                downloadProgressBar?.max = numberOfFiles
-                downloadProgressBar?.progress = 0
+                downloadProgressBar?.setIndeterminate(false)
+                downloadProgressBar?.setMax(numberOfFiles)
+                downloadProgressBar?.setProgress(0)
             }
         }
 
@@ -63,9 +63,9 @@ public class DownloadMapboxMapActivity : AppCompatActivity() {
 
         override fun progressUpdate(numberOfFilesWritten: Int, numberOfFilesExcepted: Int) {
             runOnUiThread {
-                downloadProgressBar?.isIndeterminate = false
-                downloadProgressBar?.max = numberOfFilesExcepted
-                downloadProgressBar?.progress = numberOfFilesWritten
+                downloadProgressBar?.setIndeterminate(false)
+                downloadProgressBar?.setMax(numberOfFilesExcepted)
+                downloadProgressBar?.setProgress(numberOfFilesWritten)
             }
         }
 
@@ -99,7 +99,7 @@ public class DownloadMapboxMapActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_download_mapbox_map)
 
-        val fm = supportFragmentManager
+        val fm = getSupportFragmentManager()
 
         downloadMapFragment = fm.findFragmentById(R.id.map_container) as DownloadMapboxMapFragment?
         if (downloadMapFragment == null) {
@@ -134,7 +134,7 @@ public class DownloadMapboxMapActivity : AppCompatActivity() {
     }
 
     private fun completeMapDownload() {
-        Toast.makeText(applicationContext, R.string.label_map_saved, Toast.LENGTH_LONG).show()
+        Toast.makeText(getApplicationContext(), R.string.label_map_saved, Toast.LENGTH_LONG).show()
 
         enableDownloadInstructions(true)
         enableDownloadProgress(false, true)
@@ -146,7 +146,7 @@ public class DownloadMapboxMapActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        if (mapDownloader.state == MapDownloader.MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateRunning) {
+        if (mapDownloader.getState() == MapDownloader.MBXOfflineMapDownloaderState.MBXOfflineMapDownloaderStateRunning) {
             enableDownloadInstructions(false)
             enableDownloadProgress(true, true)
         }
@@ -156,7 +156,7 @@ public class DownloadMapboxMapActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
 
-        if (isFinishing)
+        if (isFinishing())
             cancelMapDownload()
         mapDownloader.removeMapDownloaderListener(mapDownloadListener)
     }
@@ -167,20 +167,20 @@ public class DownloadMapboxMapActivity : AppCompatActivity() {
     }
 
     private fun triggerMapDownload() {
-        val mapArea = downloadMapFragment?.visibleMapArea
+        val mapArea = downloadMapFragment?.getVisibleMapArea()
         mapDownloader.beginDownloadingMapID(mapboxId, mapboxAccessToken, mapArea, 0, MAP_CACHE_ZOOM_LEVEL)
     }
 
     private fun enableDownloadInstructions(enabled: Boolean) {
-        instructionsContainer?.visibility = if (enabled) View.VISIBLE else View.GONE
+        instructionsContainer?.setVisibility(if (enabled) View.VISIBLE else View.GONE)
     }
 
     private fun enableDownloadProgress(enabled: Boolean, resetProgress: Boolean) {
-        downloadProgressContainer?.visibility = if (enabled) View.VISIBLE else View.GONE
+        downloadProgressContainer?.setVisibility(if (enabled) View.VISIBLE else View.GONE)
 
         if (resetProgress) {
-            downloadProgressBar?.progress = 0
-            downloadProgressBar?.isIndeterminate = true
+            downloadProgressBar?.setProgress(0)
+            downloadProgressBar?.setIndeterminate(true)
         }
     }
 

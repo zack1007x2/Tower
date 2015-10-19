@@ -147,11 +147,6 @@ public class ReorderRecyclerView extends RecyclerView {
             public void onTouchEvent(RecyclerView rv, MotionEvent event) {
                 handleMotionEvent(event);
             }
-
-            @Override
-            public void onRequestDisallowInterceptTouchEvent(boolean b) {
-
-            }
         };
         addOnItemTouchListener(itemTouchListener);
     }
@@ -174,8 +169,7 @@ public class ReorderRecyclerView extends RecyclerView {
                 if (cellIsMobile) {
                     hoverCellCurrentBounds.offsetTo(hoverCellOriginalBounds.left + deltaX + totalOffsetX,
                             hoverCellOriginalBounds.top + deltaY + totalOffsetY);
-                    if(hoverCell != null)
-                        hoverCell.setBounds(hoverCellCurrentBounds);
+                    hoverCell.setBounds(hoverCellCurrentBounds);
                     invalidate();
 
                     handleCellSwitch();

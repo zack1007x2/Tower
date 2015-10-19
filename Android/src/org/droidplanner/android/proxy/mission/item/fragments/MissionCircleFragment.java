@@ -9,11 +9,10 @@ import com.o3dr.services.android.lib.drone.mission.item.spatial.Circle;
 import org.beyene.sius.unit.length.LengthUnit;
 import org.droidplanner.android.R;
 import org.droidplanner.android.proxy.mission.MissionProxy;
-import org.droidplanner.android.utils.Utils;
 import org.droidplanner.android.utils.unit.providers.length.LengthUnitProvider;
-import org.droidplanner.android.view.spinnerWheel.CardWheelHorizontalView;
-import org.droidplanner.android.view.spinnerWheel.adapters.LengthWheelAdapter;
-import org.droidplanner.android.view.spinnerWheel.adapters.NumericWheelAdapter;
+import org.droidplanner.android.widgets.spinnerWheel.CardWheelHorizontalView;
+import org.droidplanner.android.widgets.spinnerWheel.adapters.LengthWheelAdapter;
+import org.droidplanner.android.widgets.spinnerWheel.adapters.NumericWheelAdapter;
 
 import java.util.List;
 
@@ -45,7 +44,7 @@ public class MissionCircleFragment extends MissionDetailFragment implements
         altitudePicker.addScrollListener(this);
 
         final NumericWheelAdapter loiterTurnAdapter = new NumericWheelAdapter(context,
-                R.layout.wheel_text_centered, 0, 50, "%d");
+                R.layout.wheel_text_centered, 0, 10, "%d");
 
         CardWheelHorizontalView<Integer> loiterTurnPicker = (CardWheelHorizontalView<Integer>) view
                 .findViewById(R.id.loiterTurnPicker);
@@ -53,7 +52,7 @@ public class MissionCircleFragment extends MissionDetailFragment implements
         loiterTurnPicker.addScrollListener(this);
 
         final LengthWheelAdapter loiterRadiusAdapter = new LengthWheelAdapter(context, R.layout.wheel_text_centered,
-                lengthUP.boxBaseValueToTarget(Utils.MIN_DISTANCE), lengthUP.boxBaseValueToTarget(Utils.MAX_DISTANCE));
+                lengthUP.boxBaseValueToTarget(0), lengthUP.boxBaseValueToTarget(50));
         CardWheelHorizontalView<LengthUnit> loiterRadiusPicker = (CardWheelHorizontalView<LengthUnit>) view
                 .findViewById(R.id.loiterRadiusPicker);
         loiterRadiusPicker.setViewAdapter(loiterRadiusAdapter);

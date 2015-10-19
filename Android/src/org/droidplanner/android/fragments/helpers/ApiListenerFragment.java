@@ -54,13 +54,17 @@ public abstract class ApiListenerFragment extends Fragment implements DroidPlann
         return dpApp.getAppPreferences();
     }
 
-	public Drone getDrone() {
+	protected Drone getDrone() {
 		return dpApp.getDrone();
 	}
 
 	protected LocalBroadcastManager getBroadcastManager() {
 		return broadcastManager;
 	}
+
+    protected Context getContext(){
+        return getActivity().getApplicationContext();
+    }
 
 	@Override
 	public void onAttach(Activity activity) {

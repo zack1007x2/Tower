@@ -31,7 +31,7 @@ public class SettingsActivity extends DrawerNavigationUI {
     }
 
     @Override
-	protected int getNavigationDrawerMenuItemId() {
+	protected int getNavigationDrawerEntryId() {
 		return R.id.navigation_settings;
 	}
 

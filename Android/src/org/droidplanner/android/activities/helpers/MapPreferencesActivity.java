@@ -1,7 +1,6 @@
 package org.droidplanner.android.activities.helpers;
 
 import org.droidplanner.android.R;
-import org.droidplanner.android.dialogs.EditInputDialog;
 import org.droidplanner.android.maps.providers.DPMapProvider;
 import org.droidplanner.android.maps.providers.MapProviderPreferences;
 
@@ -18,14 +17,12 @@ import timber.log.Timber;
  * map provider. It does so by retrieving the PreferenceFragment instance from
  * the currently selected map provider, and displaying it.
  */
-public class MapPreferencesActivity extends FragmentActivity implements EditInputDialog.Listener {
+public class MapPreferencesActivity extends FragmentActivity {
 
 	/**
 	 * Bundle key used to pass, and retrieve the current map provider name.
 	 */
 	public final static String EXTRA_MAP_PROVIDER_NAME = "EXTRA_MAP_PROVIDER_NAME";
-
-	private MapProviderPreferences currentPrefs;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -66,7 +63,8 @@ public class MapPreferencesActivity extends FragmentActivity implements EditInpu
 
 		// Retrieve the current fragment.
 		final FragmentManager fm = getFragmentManager();
-		currentPrefs = (MapProviderPreferences) fm.findFragmentById(R.id.map_preferences_container);
+		MapProviderPreferences currentPrefs = (MapProviderPreferences) fm
+				.findFragmentById(R.id.map_preferences_container);
 		if (currentPrefs == null || currentPrefs.getMapProvider() != mapProvider) {
 			currentPrefs = mapProvider.getMapProviderPreferences();
 			if (currentPrefs == null) {
@@ -78,17 +76,4 @@ public class MapPreferencesActivity extends FragmentActivity implements EditInpu
 		}
 	}
 
-	@Override
-	public void onOk(String dialogTag, CharSequence input) {
-		if(currentPrefs instanceof EditInputDialog.Listener){
-			((EditInputDialog.Listener) currentPrefs).onOk(dialogTag, input);
-		}
-	}
-
-	@Override
-	public void onCancel(String dialogTag) {
-		if(currentPrefs instanceof EditInputDialog.Listener){
-			((EditInputDialog.Listener) currentPrefs).onCancel(dialogTag);
-		}
-	}
 }

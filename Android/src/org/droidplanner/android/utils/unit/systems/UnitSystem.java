@@ -9,14 +9,14 @@ import org.droidplanner.android.utils.unit.providers.speed.SpeedUnitProvider;
  */
 public interface UnitSystem {
 
-    int AUTO = 0;
-    int METRIC = 1;
-    int IMPERIAL = 2;
+    public static final int AUTO = 0;
+    public static final int METRIC = 1;
+    public static final int IMPERIAL = 2;
 
-    LengthUnitProvider getLengthUnitProvider();
+    public LengthUnitProvider getLengthUnitProvider();
 
-    AreaUnitProvider getAreaUnitProvider();
+    public AreaUnitProvider getAreaUnitProvider();
 
-    SpeedUnitProvider getSpeedUnitProvider();
+    public SpeedUnitProvider getSpeedUnitProvider();
 
 }

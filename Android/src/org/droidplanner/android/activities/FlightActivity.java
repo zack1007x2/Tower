@@ -1,6 +1,5 @@
 package org.droidplanner.android.activities;
 
-<<<<<<< HEAD
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.BroadcastReceiver;
@@ -11,14 +10,13 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
-=======
->>>>>>> DroidPlanner/develop
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
+import android.os.Handler;
 import android.support.v4.app.FragmentManager;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-<<<<<<< HEAD
 import android.view.ViewTreeObserver;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -73,23 +71,10 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
 
     private static final String TAG = FlightActivity.class.getSimpleName();
     private static final int GOOGLE_PLAY_SERVICES_REQUEST_CODE = 101;
-=======
-
-import com.sothree.slidinguppanel.SlidingUpPanelLayout;
-
-import org.droidplanner.android.R;
-import org.droidplanner.android.fragments.FlightDataFragment;
-import org.droidplanner.android.fragments.WidgetsListFragment;
-import org.droidplanner.android.fragments.actionbar.ActionBarTelemFragment;
-import org.droidplanner.android.view.SlidingDrawer;
-
-public class FlightActivity extends DrawerNavigationUI implements SlidingUpPanelLayout.PanelSlideListener {
->>>>>>> DroidPlanner/develop
 
     private static final String EXTRA_IS_ACTION_DRAWER_OPENED = "extra_is_action_drawer_opened";
     private static final boolean DEFAULT_IS_ACTION_DRAWER_OPENED = true;
 
-<<<<<<< HEAD
     /**
      * Determines how long the failsafe view is visible for.
      */
@@ -232,15 +217,11 @@ public class FlightActivity extends DrawerNavigationUI implements SlidingUpPanel
     private ImageButton mGoToMyLocation;
     private ImageButton mGoToDroneLocation;
     private ImageButton actionDrawerToggle;
-=======
-    private FlightDataFragment flightData;
->>>>>>> DroidPlanner/develop
 
     @Override
     public void onDrawerClosed() {
         super.onDrawerClosed();
 
-<<<<<<< HEAD
         if (actionDrawerToggle != null)
             actionDrawerToggle.setActivated(false);
 
@@ -252,17 +233,12 @@ public class FlightActivity extends DrawerNavigationUI implements SlidingUpPanel
             final boolean isSlidingDrawerOpened = isActionDrawerOpened();
             updateLocationButtonsMargin(isSlidingDrawerOpened, slidingDrawerWidth);
         }
-=======
-        if (flightData != null)
-            flightData.onDrawerClosed();
->>>>>>> DroidPlanner/develop
     }
 
     @Override
     public void onDrawerOpened() {
         super.onDrawerOpened();
 
-<<<<<<< HEAD
         if (actionDrawerToggle != null)
             actionDrawerToggle.setActivated(true);
 
@@ -275,10 +251,6 @@ public class FlightActivity extends DrawerNavigationUI implements SlidingUpPanel
             final boolean isSlidingDrawerOpened = isActionDrawerOpened();
             updateLocationButtonsMargin(isSlidingDrawerOpened, slidingDrawerWidth);
         }
-=======
-        if (flightData != null)
-            flightData.onDrawerOpened();
->>>>>>> DroidPlanner/develop
     }
 
     @Override
@@ -286,7 +258,6 @@ public class FlightActivity extends DrawerNavigationUI implements SlidingUpPanel
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_flight);
 
-<<<<<<< HEAD
 
         friends = new HashMap<String, UserStatus>();
 
@@ -360,28 +331,35 @@ public class FlightActivity extends DrawerNavigationUI implements SlidingUpPanel
             flightActions = new FlightControlManagerFragment();
             fragmentManager.beginTransaction().add(R.id.flightActionsFragment, flightActions).commit();
         }
-=======
-        final FragmentManager fm = getSupportFragmentManager();
->>>>>>> DroidPlanner/develop
 
-        //Add the flight data fragment
-        flightData = (FlightDataFragment) fm.findFragmentById(R.id.flight_data_container);
-        if(flightData == null){
-            Bundle args = new Bundle();
-            args.putBoolean(FlightDataFragment.EXTRA_SHOW_ACTION_DRAWER_TOGGLE, true);
-
-            flightData = new FlightDataFragment();
-            flightData.setArguments(args);
-            fm.beginTransaction().add(R.id.flight_data_container, flightData).commit();
-        }
+        mFlightActionsView = findViewById(R.id.flightActionsFragment);
+        mFlightActionsView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver
+                .OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                if (!mSlidingPanelCollapsing.get()) {
+                    mSlidingPanel.setPanelHeight(mFlightActionsView.getHeight());
+                }
+            }
+        });
 
         // Add the telemetry fragment
         final int actionDrawerId = getActionDrawerId();
-        WidgetsListFragment widgetsListFragment = (WidgetsListFragment) fm.findFragmentById(actionDrawerId);
-        if (widgetsListFragment == null) {
-            widgetsListFragment = new WidgetsListFragment();
-            fm.beginTransaction()
-                    .add(actionDrawerId, widgetsListFragment)
+        telemetryFragment = (TelemetryFragment) fragmentManager.findFragmentById(actionDrawerId);
+        if (telemetryFragment == null) {
+            telemetryFragment = new TelemetryFragment();
+            fragmentManager.beginTransaction()
+                    .add(actionDrawerId, telemetryFragment)
+                    .commit();
+        }
+
+        // Add the mode info panel fragment
+        FlightModePanel flightModePanel = (FlightModePanel) fragmentManager.findFragmentById(R.id
+                .sliding_drawer_content);
+        if (flightModePanel == null) {
+            flightModePanel = new FlightModePanel();
+            fragmentManager.beginTransaction()
+                    .add(R.id.sliding_drawer_content, flightModePanel)
                     .commit();
         }
 
@@ -398,23 +376,6 @@ public class FlightActivity extends DrawerNavigationUI implements SlidingUpPanel
     }
 
     @Override
-    protected void onToolbarLayoutChange(int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom){
-        if(flightData != null)
-            flightData.updateActionbarShadow(bottom);
-    }
-
-    @Override
-    protected void addToolbarFragment() {
-        final int toolbarId = getToolbarId();
-        final FragmentManager fm = getSupportFragmentManager();
-        Fragment actionBarTelem = fm.findFragmentById(toolbarId);
-        if (actionBarTelem == null) {
-            actionBarTelem = new ActionBarTelemFragment();
-            fm.beginTransaction().add(toolbarId, actionBarTelem).commit();
-        }
-    }
-
-    @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putBoolean(EXTRA_IS_ACTION_DRAWER_OPENED, isActionDrawerOpened());
@@ -426,7 +387,21 @@ public class FlightActivity extends DrawerNavigationUI implements SlidingUpPanel
     }
 
     @Override
-    protected int getNavigationDrawerMenuItemId() {
+    public void onApiConnected() {
+        super.onApiConnected();
+        enableSlidingUpPanel(dpApp.getDrone());
+        getBroadcastManager().registerReceiver(eventReceiver, eventFilter);
+    }
+
+    @Override
+    public void onApiDisconnected() {
+        super.onApiDisconnected();
+        enableSlidingUpPanel(dpApp.getDrone());
+        getBroadcastManager().unregisterReceiver(eventReceiver);
+    }
+
+    @Override
+    protected int getNavigationDrawerEntryId() {
         return R.id.navigation_flight_data;
     }
 
@@ -435,11 +410,75 @@ public class FlightActivity extends DrawerNavigationUI implements SlidingUpPanel
         return true;
     }
 
-    @Override
-    public void onPanelSlide(View view, float v) {
-        final int bottomMargin = (int) getResources().getDimension(R.dimen.action_drawer_margin_bottom);
+    private void updateMapLocationButtons(AutoPanMode mode) {
+        mGoToMyLocation.setActivated(false);
+        mGoToDroneLocation.setActivated(false);
 
-<<<<<<< HEAD
+        if (mapFragment != null) {
+            mapFragment.setAutoPanMode(mode);
+        }
+
+        switch (mode) {
+            case DRONE:
+                mGoToDroneLocation.setActivated(true);
+                break;
+
+            case USER:
+                mGoToMyLocation.setActivated(true);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void updateMapBearing(float bearing) {
+        if (mapFragment != null)
+            mapFragment.updateMapBearing(bearing);
+    }
+
+    /**
+     * Ensures that the device has the correct version of the Google Play
+     * Services.
+     *
+     * @return true if the Google Play Services binary is valid
+     */
+    private boolean isGooglePlayServicesValid(boolean showErrorDialog) {
+        // Check for the google play services is available
+        final int playStatus = GooglePlayServicesUtil
+                .isGooglePlayServicesAvailable(getApplicationContext());
+        final boolean isValid = playStatus == ConnectionResult.SUCCESS;
+
+        if (!isValid && showErrorDialog) {
+            final Dialog errorDialog = GooglePlayServicesUtil.getErrorDialog(playStatus, this,
+                    GOOGLE_PLAY_SERVICES_REQUEST_CODE, new DialogInterface.OnCancelListener() {
+                        @Override
+                        public void onCancel(DialogInterface dialog) {
+                            finish();
+                        }
+                    });
+
+            if (errorDialog != null)
+                errorDialog.show();
+        }
+
+        return isValid;
+    }
+
+    /**
+     * Used to setup the flight screen map fragment. Before attempting to
+     * initialize the map fragment, this checks if the Google Play Services
+     * binary is installed and up to date.
+     */
+    private void setupMapFragment() {
+        if (mapFragment == null && isGooglePlayServicesValid(true)) {
+            mapFragment = (FlightMapFragment) fragmentManager.findFragmentById(R.id.flight_map_fragment);
+            if (mapFragment == null) {
+                mapFragment = new FlightMapFragment();
+                fragmentManager.beginTransaction().add(R.id.flight_map_fragment, mapFragment).commit();
+            }
+        }
+    }
+
     public void setGuidedClickListener(FlightMapFragment.OnGuidedClickListener listener) {
         mapFragment.setGuidedClickListener(listener);
     }
@@ -450,51 +489,64 @@ public class FlightActivity extends DrawerNavigationUI implements SlidingUpPanel
 
     public void removeMapMarkerProvider(DroneMap.MapMarkerProvider provider) {
         mapFragment.removeMapMarkerProvider(provider);
-=======
-        //Update the bottom margin for the action drawer
-        final View flightActionBar = ((ViewGroup)view).getChildAt(0);
-        final int[] viewLocs = new int[2];
-        flightActionBar.getLocationInWindow(viewLocs);
-        updateActionDrawerBottomMargin(viewLocs[0] + flightActionBar.getWidth(), Math.max((int) (view.getHeight() * v), bottomMargin));
     }
 
     @Override
-    public void onPanelCollapsed(View view) {
-        final int bottomMargin = (int) getResources().getDimension(R.dimen.action_drawer_margin_bottom);
-
-        //Reset the bottom margin for the action drawer
-        final View flightActionBar = ((ViewGroup)view).getChildAt(0);
-        final int[] viewLocs = new int[2];
-        flightActionBar.getLocationInWindow(viewLocs);
-        updateActionDrawerBottomMargin(viewLocs[0] + flightActionBar.getWidth(), bottomMargin);
->>>>>>> DroidPlanner/develop
+    public void onStart() {
+        super.onStart();
+        setupMapFragment();
     }
 
     @Override
-    public void onPanelExpanded(View view) {
-        //Update the bottom margin for the action drawer
-        final View flightActionBar = ((ViewGroup)view).getChildAt(0);
-        final int[] viewLocs = new int[2];
-        flightActionBar.getLocationInWindow(viewLocs);
-        updateActionDrawerBottomMargin(viewLocs[0] + flightActionBar.getWidth(), view.getHeight());
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        updateMapLocationButtons(mAppPrefs.getAutoPanMode());
+
+        final View telemetryView = telemetryFragment.getView();
+        if (telemetryView != null) {
+            final int slidingDrawerWidth = telemetryView.getWidth();
+            updateLocationButtonsMargin(isActionDrawerOpened(), slidingDrawerWidth);
+        }
     }
 
-    @Override
-    public void onPanelAnchored(View view) {
+    /**
+     * Account for the various ui elements and update the map padding so that it
+     * remains 'visible'.
+     */
+    private void updateLocationButtonsMargin(boolean isOpened, int drawerWidth) {
 
+        // Update the right margin for the my location button
+        final ViewGroup.MarginLayoutParams marginLp = (ViewGroup.MarginLayoutParams) mLocationButtonsContainer
+                .getLayoutParams();
+        final int rightMargin = isOpened ? marginLp.leftMargin + drawerWidth : marginLp.leftMargin;
+        marginLp.setMargins(marginLp.leftMargin, marginLp.topMargin, rightMargin, marginLp.bottomMargin);
+        mLocationButtonsContainer.requestLayout();
     }
 
-    @Override
-    public void onPanelHidden(View view) {
-        final int bottomMargin = (int) getResources().getDimension(R.dimen.action_drawer_margin_bottom);
+    private void enableSlidingUpPanel(Drone api) {
+        if (mSlidingPanel == null || api == null) {
+            return;
+        }
 
-        final View flightActionBar = ((ViewGroup)view).getChildAt(0);
-        final int[] viewLocs = new int[2];
-        flightActionBar.getLocationInWindow(viewLocs);
-        updateActionDrawerBottomMargin(viewLocs[0] + flightActionBar.getWidth(), bottomMargin);
+        final boolean isEnabled = flightActions != null && flightActions.isSlidingUpPanelEnabled
+                (api);
+
+        if (isEnabled) {
+            mSlidingPanel.setSlidingEnabled(true);
+        } else {
+            if (!mSlidingPanelCollapsing.get()) {
+                if (mSlidingPanel.isPanelExpanded()) {
+                    mSlidingPanel.setPanelSlideListener(mDisablePanelSliding);
+                    mSlidingPanel.collapsePanel();
+                    mSlidingPanelCollapsing.set(true);
+                } else {
+                    mSlidingPanel.setSlidingEnabled(false);
+                    mSlidingPanelCollapsing.set(false);
+                }
+            }
+        }
     }
 
-<<<<<<< HEAD
     private void onAutopilotError(ErrorType errorType) {
         if (errorType == null)
             return;
@@ -512,19 +564,10 @@ public class FlightActivity extends DrawerNavigationUI implements SlidingUpPanel
 
         if (!TextUtils.isEmpty(errorLabel)) {
             handler.removeCallbacks(hideWarningView);
-=======
-    private void updateActionDrawerBottomMargin(int rightEdge, int bottomMargin){
-        final ViewGroup actionDrawerParent = (ViewGroup) getActionDrawer();
-        final View actionDrawer = ((ViewGroup)actionDrawerParent.getChildAt(1)).getChildAt(0);
 
-        final int[] actionDrawerLocs = new int[2];
-        actionDrawer.getLocationInWindow(actionDrawerLocs);
->>>>>>> DroidPlanner/develop
-
-        if(actionDrawerLocs[0] <= rightEdge) {
-            ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) actionDrawerParent.getLayoutParams();
-            lp.bottomMargin = bottomMargin;
-            actionDrawerParent.requestLayout();
+            warningView.setText(errorLabel);
+            warningView.setVisibility(View.VISIBLE);
+            handler.postDelayed(hideWarningView, WARNING_VIEW_DISPLAY_TIMEOUT);
         }
     }
 

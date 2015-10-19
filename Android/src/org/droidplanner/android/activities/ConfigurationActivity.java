@@ -43,7 +43,7 @@ public class ConfigurationActivity extends DrawerNavigationUI {
     }
 
     @Override
-    protected int getNavigationDrawerMenuItemId() {
+    protected int getNavigationDrawerEntryId() {
         return mConfigScreenId;
     }
 

@@ -21,7 +21,6 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,7 +35,12 @@ import android.widget.TextView;
  * This is used to show the user a list of bluetooth devices to connect to.
  * @author Fredia Huya-Kouadio
  */
-public class BluetoothDevicesActivity extends AppCompatActivity {
+public class BluetoothDevicesActivity extends ActionBarActivity {
+
+	/**
+	 * This tag is used for logging.
+	 */
+	private static final String TAG = BluetoothDevicesActivity.class.getSimpleName();
 
 	/**
 	 * Request code used in onActivityResult to check for bluetooth activation
@@ -121,15 +125,11 @@ public class BluetoothDevicesActivity extends AppCompatActivity {
 
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int position,	long id) {
-            final Object item = parent.getItemAtPosition(position);
-            if(!(item instanceof BluetoothDevice))
-                return;
-
 			// Cancel discovery because it's costly, and we're about to connect
 			mBtAdapter.cancelDiscovery();
 
 			// Retrieve the selected bluetooth device
-			final BluetoothDevice device = (BluetoothDevice) item;
+			final BluetoothDevice device = (BluetoothDevice) parent.getItemAtPosition(position);
 
 			// Stores the mac address in the shared preferences,
 			// so the bluetooth client can retrieve it on connection.

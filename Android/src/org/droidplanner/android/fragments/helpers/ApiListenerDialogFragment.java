@@ -70,6 +70,10 @@ public abstract class ApiListenerDialogFragment extends DialogFragment implement
         return speedUnitProvider;
     }
 
+    protected Context getContext(){
+        return dpApp.getApplicationContext();
+    }
+
     protected DroidPlannerPrefs getAppPrefs(){
         return dpApp.getAppPreferences();
     }

@@ -15,19 +15,17 @@
         <item
             android:id="@+id/menu_upload_mission"
             app:showAsAction="never"
-            android:icon="@drawable/ic_cloud_upload_grey_700_24dp"
             android:title="@string/upload_mission"/>
         <item
             android:id="@+id/menu_download_mission"
             app:showAsAction="never"
-            android:icon="@drawable/ic_cloud_download_grey_700_24dp"
             android:title="@string/download_mission"/>
         <item
             android:id="@+id/menu_kill_switch"
             app:showAsAction="never"
             android:enabled="false"
             android:visible="false"
-            android:title="@string/menu_kill_switch"/>
+            android:title="Kill Switch"/>
 
     </group>
 

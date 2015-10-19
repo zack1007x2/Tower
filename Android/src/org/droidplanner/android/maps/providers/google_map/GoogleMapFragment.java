@@ -68,11 +68,7 @@ import org.droidplanner.android.R;
 import org.droidplanner.android.activities.helpers.SuperUI;
 import org.droidplanner.android.data.GpsModel;
 import org.droidplanner.android.fragments.SettingsFragment;
-<<<<<<< HEAD
 import org.droidplanner.android.graphic.map.GraphicXmppDrone;
-=======
-import org.droidplanner.android.graphic.map.GraphicHome;
->>>>>>> DroidPlanner/develop
 import org.droidplanner.android.maps.DPMap;
 import org.droidplanner.android.maps.MarkerInfo;
 import org.droidplanner.android.maps.providers.DPMapProvider;
@@ -102,7 +98,7 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
     private static final long USER_LOCATION_UPDATE_FASTEST_INTERVAL = 5000; // ms
     private static final float USER_LOCATION_UPDATE_MIN_DISPLACEMENT = 0; // m
 
-    private static final float GO_TO_MY_LOCATION_ZOOM = 17f;
+    private static final float GO_TO_MY_LOCATION_ZOOM = 19f;
 
     private static final int ONLINE_TILE_PROVIDER_Z_INDEX = -1;
     private static final int OFFLINE_TILE_PROVIDER_Z_INDEX = -2;
@@ -197,8 +193,7 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
                         .draggable(false)
                         .flat(true)
                         .visible(true)
-                        .anchor(0.5f, 0.5f)
-                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.user_location));
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.blue));
 
                 getMapAsync(new OnMapReadyCallback() {
                     @Override
@@ -245,7 +240,7 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
         @Override
         public void doRun() {
             final LocationRequest locationReq = LocationRequest.create()
-                    .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                    .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
                     .setFastestInterval(USER_LOCATION_UPDATE_FASTEST_INTERVAL)
                     .setInterval(USER_LOCATION_UPDATE_INTERVAL)
                     .setSmallestDisplacement(USER_LOCATION_UPDATE_MIN_DISPLACEMENT);
@@ -299,33 +294,6 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
     private String mapboxId;
     private String mapboxAccessToken;
 
-    private final OnMapReadyCallback loadCameraPositionTask = new OnMapReadyCallback() {
-        @Override
-        public void onMapReady(GoogleMap googleMap) {
-            final SharedPreferences settings = mAppPrefs.prefs;
-
-            final CameraPosition.Builder camera = new CameraPosition.Builder();
-            camera.bearing(settings.getFloat(PREF_BEA, DEFAULT_BEARING));
-            camera.tilt(settings.getFloat(PREF_TILT, DEFAULT_TILT));
-            camera.zoom(settings.getFloat(PREF_ZOOM, DEFAULT_ZOOM_LEVEL));
-            camera.target(new LatLng(settings.getFloat(PREF_LAT, DEFAULT_LATITUDE),
-                    settings.getFloat(PREF_LNG, DEFAULT_LONGITUDE)));
-
-            googleMap.moveCamera(CameraUpdateFactory.newCameraPosition(camera.build()));
-        }
-    };
-
-    private final OnMapReadyCallback setupMapTask = new OnMapReadyCallback() {
-        @Override
-        public void onMapReady(GoogleMap googleMap) {
-            setupMapUI(googleMap);
-            setupMapOverlay(googleMap);
-            setupMapListeners(googleMap);
-        }
-    };
-
-    private LocalBroadcastManager lbm;
-
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
@@ -338,8 +306,6 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
 
         final FragmentActivity activity = getActivity();
         final Context context = activity.getApplicationContext();
-
-        lbm = LocalBroadcastManager.getInstance(context);
 
         final View view = super.onCreateView(inflater, viewGroup, bundle);
 
@@ -362,7 +328,9 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
         mGApiClientMgr.start();
 
         mGApiClientMgr.addTask(mRequestLocationUpdateTask);
-        lbm.registerReceiver(eventReceiver, eventFilter);
+        LocalBroadcastManager.getInstance(getActivity().getApplicationContext())
+                .registerReceiver(eventReceiver, eventFilter);
+
         setupMap();
     }
 
@@ -371,7 +339,8 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
         super.onStop();
 
         mGApiClientMgr.addTask(mRemoveLocationUpdateTask);
-        lbm.unregisterReceiver(eventReceiver);
+        LocalBroadcastManager.getInstance(getActivity().getApplicationContext())
+                .unregisterReceiver(eventReceiver);
 
         mGApiClientMgr.stopSafely();
     }
@@ -458,7 +427,29 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
     }
 
     private void setAutoPanMode(AutoPanMode current, AutoPanMode update) {
-        mPanMode.compareAndSet(current, update);
+        if (mPanMode.compareAndSet(current, update)) {
+            switch (current) {
+                case DRONE:
+                    LocalBroadcastManager.getInstance(getActivity().getApplicationContext())
+                            .unregisterReceiver(eventReceiver);
+                    break;
+
+                case DISABLED:
+                default:
+                    break;
+            }
+
+            switch (update) {
+                case DRONE:
+                    LocalBroadcastManager.getInstance(getActivity().getApplicationContext()).registerReceiver
+                            (eventReceiver, eventFilter);
+                    break;
+
+                case DISABLED:
+                default:
+                    break;
+            }
+        }
     }
 
     @Override
@@ -685,45 +676,32 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
         }
 
         if (mDroneLeashPath == null) {
-            final PolylineOptions flightPath = new PolylineOptions();
+            PolylineOptions flightPath = new PolylineOptions();
             flightPath.color(DRONE_LEASH_DEFAULT_COLOR).width(
-                    DroneHelper.scaleDpToPixels(DRONE_LEASH_DEFAULT_WIDTH, getResources()));
+                    DroneHelper.scaleDpToPixels(DRONE_LEASH_DEFAULT_WIDTH,
+                            getResources()));
+            mDroneLeashPath = getMap().addPolyline(flightPath);
+        }
 
-            getMapAsync(new OnMapReadyCallback() {
-                @Override
-                public void onMapReady(GoogleMap googleMap) {
-                    mDroneLeashPath = getMap().addPolyline(flightPath);
-                    mDroneLeashPath.setPoints(pathPoints);
-                }
-            });
-        }
-        else {
-            mDroneLeashPath.setPoints(pathPoints);
-        }
+        mDroneLeashPath.setPoints(pathPoints);
     }
 
     @Override
     public void updateMissionPath(PathSource pathSource) {
         List<LatLong> pathCoords = pathSource.getPathPoints();
-        final List<LatLng> pathPoints = new ArrayList<>(pathCoords.size());
+        final List<LatLng> pathPoints = new ArrayList<LatLng>(pathCoords.size());
         for (LatLong coord : pathCoords) {
             pathPoints.add(DroneHelper.CoordToLatLang(coord));
         }
 
         if (missionPath == null) {
-            final PolylineOptions pathOptions = new PolylineOptions();
-            pathOptions.color(MISSION_PATH_DEFAULT_COLOR).width(MISSION_PATH_DEFAULT_WIDTH);
-            getMapAsync(new OnMapReadyCallback() {
-                @Override
-                public void onMapReady(GoogleMap googleMap) {
-                    missionPath = getMap().addPolyline(pathOptions);
-                    missionPath.setPoints(pathPoints);
-                }
-            });
+            PolylineOptions pathOptions = new PolylineOptions();
+            pathOptions.color(MISSION_PATH_DEFAULT_COLOR).width(
+                    MISSION_PATH_DEFAULT_WIDTH);
+            missionPath = getMap().addPolyline(pathOptions);
         }
-        else {
-            missionPath.setPoints(pathPoints);
-        }
+
+        missionPath.setPoints(pathPoints);
     }
 
 
@@ -768,11 +746,7 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
      */
     @Override
     public void saveCameraPosition() {
-        final GoogleMap googleMap = getMap();
-        if(googleMap == null)
-            return;
-
-        CameraPosition camera = googleMap.getCameraPosition();
+        CameraPosition camera = getMap().getCameraPosition();
         mAppPrefs.prefs.edit()
                 .putFloat(PREF_LAT, (float) camera.target.latitude)
                 .putFloat(PREF_LNG, (float) camera.target.longitude)
@@ -783,14 +757,35 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
 
     @Override
     public void loadCameraPosition() {
-        getMapAsync(loadCameraPositionTask);
+        getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(GoogleMap googleMap) {
+                final SharedPreferences settings = mAppPrefs.prefs;
+
+                final CameraPosition.Builder camera = new CameraPosition.Builder();
+                camera.bearing(settings.getFloat(PREF_BEA, DEFAULT_BEARING));
+                camera.tilt(settings.getFloat(PREF_TILT, DEFAULT_TILT));
+                camera.zoom(settings.getFloat(PREF_ZOOM, DEFAULT_ZOOM_LEVEL));
+                camera.target(new LatLng(settings.getFloat(PREF_LAT, DEFAULT_LATITUDE),
+                        settings.getFloat(PREF_LNG, DEFAULT_LONGITUDE)));
+
+                googleMap.moveCamera(CameraUpdateFactory.newCameraPosition(camera.build()));
+            }
+        });
     }
 
     private void setupMap() {
         // Make sure the map is initialized
         MapsInitializer.initialize(getActivity().getApplicationContext());
 
-        getMapAsync(setupMapTask);
+        getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(GoogleMap googleMap) {
+                setupMapUI(googleMap);
+                setupMapOverlay(googleMap);
+                setupMapListeners(googleMap);
+            }
+        });
     }
 
     @Override
@@ -890,10 +885,8 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
             public void onMarkerDragStart(Marker marker) {
                 if (mMarkerDragListener != null) {
                     final MarkerInfo markerInfo = mBiMarkersMap.getKey(marker);
-                    if(!(markerInfo instanceof GraphicHome)) {
-                        markerInfo.setPosition(DroneHelper.LatLngToCoord(marker.getPosition()));
-                        mMarkerDragListener.onMarkerDragStart(markerInfo);
-                    }
+                    markerInfo.setPosition(DroneHelper.LatLngToCoord(marker.getPosition()));
+                    mMarkerDragListener.onMarkerDragStart(markerInfo);
                 }
             }
 
@@ -901,10 +894,8 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
             public void onMarkerDrag(Marker marker) {
                 if (mMarkerDragListener != null) {
                     final MarkerInfo markerInfo = mBiMarkersMap.getKey(marker);
-                    if(!(markerInfo instanceof GraphicHome)) {
-                        markerInfo.setPosition(DroneHelper.LatLngToCoord(marker.getPosition()));
-                        mMarkerDragListener.onMarkerDrag(markerInfo);
-                    }
+                    markerInfo.setPosition(DroneHelper.LatLngToCoord(marker.getPosition()));
+                    mMarkerDragListener.onMarkerDrag(markerInfo);
                 }
             }
 
@@ -1056,6 +1047,14 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
                 }
             }
         }.execute();
+    }
+
+    protected Context getContext(){
+        final Activity activity = getActivity();
+        if(activity == null)
+            return null;
+
+        return activity.getApplicationContext();
     }
 
     protected void clearMap() {

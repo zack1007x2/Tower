@@ -51,7 +51,6 @@ public abstract class DroneMap extends ApiListenerFragment {
 		eventFilter.addAction(AttributeEvent.HEARTBEAT_FIRST);
 		eventFilter.addAction(AttributeEvent.HEARTBEAT_RESTORED);
 		eventFilter.addAction(AttributeEvent.HEARTBEAT_TIMEOUT);
-		eventFilter.addAction(AttributeEvent.STATE_CONNECTED);
 		eventFilter.addAction(AttributeEvent.STATE_DISCONNECTED);
 		eventFilter.addAction(AttributeEvent.CAMERA_FOOTPRINTS_UPDATED);
 		eventFilter.addAction(AttributeEvent.ATTITUDE_UPDATED);
@@ -92,7 +91,6 @@ public abstract class DroneMap extends ApiListenerFragment {
 
                 case AttributeEvent.HEARTBEAT_FIRST:
                 case AttributeEvent.HEARTBEAT_RESTORED:
-				case AttributeEvent.STATE_CONNECTED:
                     mMapFragment.updateMarker(graphicDrone);
                     break;
 
@@ -102,11 +100,9 @@ public abstract class DroneMap extends ApiListenerFragment {
                     break;
 
                 case AttributeEvent.CAMERA_FOOTPRINTS_UPDATED: {
-					if(mAppPrefs.isRealtimeFootprintsEnabled()) {
-						CameraProxy camera = drone.getAttribute(AttributeType.CAMERA);
-						if (camera != null && camera.getLastFootPrint() != null)
-							mMapFragment.addCameraFootprint(camera.getLastFootPrint());
-					}
+                    CameraProxy camera = drone.getAttribute(AttributeType.CAMERA);
+                    if (camera != null && camera.getLastFootPrint() != null)
+                        mMapFragment.addCameraFootprint(camera.getLastFootPrint());
                     break;
                 }
 
@@ -210,6 +206,7 @@ public abstract class DroneMap extends ApiListenerFragment {
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup viewGroup, Bundle bundle) {
 		final View view = inflater.inflate(R.layout.fragment_drone_map, viewGroup, false);
+		mAppPrefs = new DroidPlannerPrefs(context);
 		updateMapFragment();
 		return view;
 	}
@@ -230,7 +227,7 @@ public abstract class DroneMap extends ApiListenerFragment {
 		drone = getDrone();
 		missionProxy = getMissionProxy();
 
-		home = new GraphicHome(drone, getContext());
+		home = new GraphicHome(drone);
 		graphicDrone = new GraphicDrone(drone);
 		guided = new GraphicGuided(drone);
 
@@ -287,7 +284,6 @@ public abstract class DroneMap extends ApiListenerFragment {
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);
 		context = activity.getApplicationContext();
-		mAppPrefs = new DroidPlannerPrefs(context);
 	}
 
 	public final void postUpdate() {

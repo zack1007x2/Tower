@@ -91,7 +91,7 @@ public interface MarkerInfo {
 	/**
 	 * Default implementation of the MarkerInfo interface.
 	 */
-	class SimpleMarkerInfo implements MarkerInfo {
+	public static class SimpleMarkerInfo implements MarkerInfo {
 
 		@Override
 		public float getAlpha() {

@@ -11,7 +11,7 @@ public class MissionSelection {
 	 * interface.
 	 */
 	public interface OnSelectionUpdateListener {
-		void onSelectionUpdate(List<MissionItemProxy> selected);
+		public void onSelectionUpdate(List<MissionItemProxy> selected);
 	}
 
 	/**

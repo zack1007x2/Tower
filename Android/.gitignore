@@ -30,9 +30,6 @@ proguard/
 *.iws
 .idea/
 
-# Fabric project files
-fabric.properties
-
 *.pydevproject
 #.project
 .metadata

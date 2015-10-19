@@ -15,11 +15,11 @@ import java.lang.ref.WeakReference;
 public abstract class OpenFileDialog implements OnClickListener {
 
 	public interface FileReader {
-		String getPath();
+		public String getPath();
 
-		String[] getFileList();
+		public String[] getFileList();
 
-		boolean openFile(String file);
+		public boolean openFile(String file);
 	}
 
 	protected abstract FileReader createReader();
@@ -63,7 +63,7 @@ public abstract class OpenFileDialog implements OnClickListener {
         private final ProgressDialog progressDialog;
 
         public OpenFileAsyncTask(OpenFileDialog dialog){
-            containerRef = new WeakReference<>(dialog);
+            containerRef = new WeakReference<OpenFileDialog>(dialog);
             progressDialog = new ProgressDialog(dialog.context);
             progressDialog.setTitle("Processing...");
             progressDialog.setMessage("Please wait.");
@@ -88,8 +88,7 @@ public abstract class OpenFileDialog implements OnClickListener {
 
         @Override
         protected void onCancelled(){
-            if(progressDialog.isShowing())
-                progressDialog.dismiss();
+            progressDialog.dismiss();
         }
 
         @Override
@@ -106,8 +105,7 @@ public abstract class OpenFileDialog implements OnClickListener {
                 ref.onDataLoaded(ref.reader);
             }
 
-            if(progressDialog.isShowing())
-                progressDialog.dismiss();
+            progressDialog.dismiss();
         }
     }
 

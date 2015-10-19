@@ -8,10 +8,9 @@ import com.o3dr.services.android.lib.drone.mission.item.command.CameraTrigger;
 
 import org.beyene.sius.unit.length.LengthUnit;
 import org.droidplanner.android.R;
-import org.droidplanner.android.utils.Utils;
 import org.droidplanner.android.utils.unit.providers.length.LengthUnitProvider;
-import org.droidplanner.android.view.spinnerWheel.CardWheelHorizontalView;
-import org.droidplanner.android.view.spinnerWheel.adapters.LengthWheelAdapter;
+import org.droidplanner.android.widgets.spinnerWheel.CardWheelHorizontalView;
+import org.droidplanner.android.widgets.spinnerWheel.adapters.LengthWheelAdapter;
 
 public class MissionCameraTriggerFragment extends MissionDetailFragment implements
         CardWheelHorizontalView.OnCardWheelScrollListener<LengthUnit> {
@@ -32,8 +31,7 @@ public class MissionCameraTriggerFragment extends MissionDetailFragment implemen
 
         final LengthUnitProvider lengthUnitProvider = getLengthUnitProvider();
         final LengthWheelAdapter adapter = new LengthWheelAdapter(getContext(), R.layout.wheel_text_centered,
-                lengthUnitProvider.boxBaseValueToTarget(Utils.MIN_DISTANCE),
-                lengthUnitProvider.boxBaseValueToTarget(Utils.MAX_DISTANCE));
+                lengthUnitProvider.boxBaseValueToTarget(0), lengthUnitProvider.boxBaseValueToTarget(100));
         final CardWheelHorizontalView<LengthUnit> cardAltitudePicker = (CardWheelHorizontalView<LengthUnit>) view
                 .findViewById(R.id.picker1);
         cardAltitudePicker.setViewAdapter(adapter);

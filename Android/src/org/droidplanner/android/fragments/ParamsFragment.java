@@ -5,25 +5,28 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.Build;
 import android.os.Bundle;
-import android.support.design.widget.Snackbar;
 import android.support.v7.widget.SearchView;
+import android.text.Editable;
+import android.text.InputType;
 import android.text.TextUtils;
-import android.util.TypedValue;
+import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AbsListView;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.o3dr.android.client.Drone;
-import com.o3dr.android.client.apis.VehicleApi;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEventExtra;
 import com.o3dr.services.android.lib.drone.attribute.AttributeType;
@@ -31,6 +34,7 @@ import com.o3dr.services.android.lib.drone.property.Parameter;
 import com.o3dr.services.android.lib.drone.property.Parameters;
 
 import org.droidplanner.android.R;
+import org.droidplanner.android.dialogs.EditInputDialog;
 import org.droidplanner.android.dialogs.SupportEditInputDialog;
 import org.droidplanner.android.dialogs.openfile.OpenFileDialog;
 import org.droidplanner.android.dialogs.openfile.OpenParameterDialog;
@@ -39,14 +43,16 @@ import org.droidplanner.android.fragments.helpers.ApiListenerListFragment;
 import org.droidplanner.android.utils.file.FileStream;
 import org.droidplanner.android.utils.file.IO.ParameterWriter;
 import org.droidplanner.android.utils.prefs.DroidPlannerPrefs;
-import org.droidplanner.android.view.adapterViews.ParamsAdapter;
-import org.droidplanner.android.view.adapterViews.ParamsAdapterItem;
+import org.droidplanner.android.widgets.adapterViews.ParamsAdapter;
+import org.droidplanner.android.widgets.adapterViews.ParamsAdapterItem;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
 
-public class ParamsFragment extends ApiListenerListFragment implements SupportEditInputDialog.Listener {
+public class ParamsFragment extends ApiListenerListFragment {
+
+    static final String TAG = ParamsFragment.class.getSimpleName();
 
     public static final String ADAPTER_ITEMS = ParamsFragment.class.getName() + ".adapter.items";
     private static final String PREF_PARAMS_FILTER_ON = "pref_params_filter_on";
@@ -55,8 +61,6 @@ public class ParamsFragment extends ApiListenerListFragment implements SupportEd
     private static final String EXTRA_OPENED_PARAMS_FILENAME = "extra_opened_params_filename";
 
     private final static IntentFilter intentFilter = new IntentFilter();
-    public static final int SNACKBAR_HEIGHT = 48;
-    private static final String PARAMETERS_FILENAME_DIALOG_TAG = "Parameters filename";
 
     static {
         intentFilter.addAction(AttributeEvent.PARAMETERS_REFRESH_STARTED);
@@ -115,7 +119,6 @@ public class ParamsFragment extends ApiListenerListFragment implements SupportEd
      */
     private String openedParamsFilename;
     private View searchButton;
-    private Snackbar snackbar;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -145,30 +148,6 @@ public class ParamsFragment extends ApiListenerListFragment implements SupportEd
             @Override
             public void onHelp(int position, EditText valueView) {
                 showInfo(position, valueView);
-            }
-        });
-        adapter.setOnParametersChangeListener(new ParamsAdapter.OnParametersChangeListener() {
-            @Override
-            public void onParametersChange(int dirtyCount) {
-                if (dirtyCount > 0) {
-                    View view = getView();
-                    if (view != null && snackbar == null) {
-                        snackbar = Snackbar.make(view, R.string.unsaved_param_warning, Snackbar.LENGTH_INDEFINITE)
-                                .setAction(getString(R.string.upload), new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        writeModifiedParametersToDrone();
-                                    }
-                                });
-                        snackbar.show();
-                    }
-
-                } else {
-                    if (snackbar != null) {
-                        snackbar.dismiss();
-                        snackbar = null;
-                    }
-                }
             }
         });
     }
@@ -201,19 +180,12 @@ public class ParamsFragment extends ApiListenerListFragment implements SupportEd
         searchParams.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1)
-                    searchButton.performClick();
-                else
-                    searchButton.callOnClick();
+                searchButton.callOnClick();
             }
         });
 
         mLoadingProgress = (ProgressBar) view.findViewById(R.id.reload_progress);
         mLoadingProgress.setVisibility(View.GONE);
-
-        View space = new View(getActivity().getApplicationContext());
-        space.setLayoutParams(new AbsListView.LayoutParams(0, (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, SNACKBAR_HEIGHT, getResources().getDisplayMetrics())));
-        getListView().addFooterView(space);
     }
 
     private void filterInput(CharSequence input) {
@@ -318,7 +290,7 @@ public class ParamsFragment extends ApiListenerListFragment implements SupportEd
 
     private void refreshParameters() {
         if (getDrone().isConnected()) {
-            VehicleApi.getApi(getDrone()).refreshParameters();
+            getDrone().refreshParameters();
         } else {
             Toast.makeText(getActivity(), R.string.msg_connect_first, Toast.LENGTH_SHORT).show();
         }
@@ -348,7 +320,6 @@ public class ParamsFragment extends ApiListenerListFragment implements SupportEd
                     parametersCount + " " + getString(R.string.msg_parameters_written_to_drone),
                     Toast.LENGTH_SHORT).show();
         }
-        snackbar = null;
     }
 
     private void openParametersFromFile() {
@@ -363,37 +334,36 @@ public class ParamsFragment extends ApiListenerListFragment implements SupportEd
     }
 
     private void saveParametersToFile() {
+        final Context context = getActivity().getApplicationContext();
         final String defaultFilename = TextUtils.isEmpty(openedParamsFilename)
                 ? FileStream.getParameterFilename("Parameters-")
                 : openedParamsFilename;
 
-        final SupportEditInputDialog dialog = SupportEditInputDialog.newInstance(PARAMETERS_FILENAME_DIALOG_TAG,
-                getString(R.string.label_enter_filename), defaultFilename, true);
+        final SupportEditInputDialog dialog = SupportEditInputDialog.newInstance(getString(R.string
+                        .label_enter_filename),
+                defaultFilename,
+                new SupportEditInputDialog.Listener() {
+                    @Override
+                    public void onOk(CharSequence input) {
+                        final List<Parameter> parameters = new ArrayList<Parameter>();
+                        for (int i = 0; i < adapter.getCount(); i++) {
+                            parameters.add(adapter.getItem(i).getParameter());
+                        }
 
-        dialog.show(getChildFragmentManager(), PARAMETERS_FILENAME_DIALOG_TAG);
-    }
-
-    @Override
-    public void onOk(String dialogTag, CharSequence input) {
-        switch(dialogTag){
-            case PARAMETERS_FILENAME_DIALOG_TAG:
-                final List<Parameter> parameters = new ArrayList<Parameter>();
-                for (int i = 0; i < adapter.getCount(); i++) {
-                    parameters.add(adapter.getItem(i).getParameter());
-                }
-
-                if (parameters.size() > 0) {
-                    ParameterWriter parameterWriter = new ParameterWriter(parameters);
-                    if (parameterWriter.saveParametersToFile(input.toString())) {
-                        Toast.makeText(getActivity(), R.string.parameters_saved, Toast.LENGTH_SHORT).show();
+                        if (parameters.size() > 0) {
+                            ParameterWriter parameterWriter = new ParameterWriter(parameters);
+                            if (parameterWriter.saveParametersToFile(input.toString())) {
+                                Toast.makeText(getActivity(), R.string.parameters_saved, Toast.LENGTH_SHORT).show();
+                            }
+                        }
                     }
-                }
-                break;
-        }
-    }
 
-    @Override
-    public void onCancel(String dialogTag) {
+                    @Override
+                    public void onCancel() {
+                    }
+                });
+
+        dialog.show(getChildFragmentManager(), "Parameters filename");
     }
 
     private void loadAdapter(List<Parameter> parameters, boolean isUpdate) {

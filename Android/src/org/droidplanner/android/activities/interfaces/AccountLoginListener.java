@@ -4,9 +4,9 @@ package org.droidplanner.android.activities.interfaces;
 * Created by Fredia Huya-Kouadio on 1/23/15.
 */
 public interface AccountLoginListener {
-    void onLogin();
+    public void onLogin();
 
-    void onFailedLogin();
+    public void onFailedLogin();
 
-    void onLogout();
+    public void onLogout();
 }

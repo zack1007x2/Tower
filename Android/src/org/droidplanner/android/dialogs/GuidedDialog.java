@@ -13,7 +13,7 @@ import com.google.android.gms.maps.model.LatLng;
 public class GuidedDialog extends DialogFragment {
 
 	public interface GuidedDialogListener {
-		void onForcedGuidedPoint(LatLng coord);
+		public void onForcedGuidedPoint(LatLng coord);
 	}
 
 	private GuidedDialogListener listener;
@@ -42,11 +42,5 @@ public class GuidedDialog extends DialogFragment {
 				}).setNegativeButton(android.R.string.cancel, null);
 
 		return builder.create();
-	}
-
-	@Override
-	public void onPause(){
-		super.onPause();
-		dismiss();
 	}
 }

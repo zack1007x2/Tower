@@ -336,12 +336,8 @@ public class MapDownloader {
             return false;
         }
 
-        final OfflineDatabaseHandler dbHandler = DatabaseState.getOfflineDatabaseHandlerForMapId(context, mapId);
-        if(dbHandler == null)
-            return false;
-
         // Build a query to populate the database (map metadata and list of map resource urls)
-        SQLiteDatabase db = dbHandler.getWritableDatabase();
+        SQLiteDatabase db = DatabaseState.getOfflineDatabaseHandlerForMapId(context, mapId).getWritableDatabase();
         db.beginTransaction();
 
         for (String url : urlStrings) {
@@ -366,13 +362,9 @@ public class MapDownloader {
             return false;
         }
 
-        final OfflineDatabaseHandler dbHandler = DatabaseState.getOfflineDatabaseHandlerForMapId(context, mapId);
-        if(dbHandler == null)
-            return false;
-
-        final SQLiteDatabase db = dbHandler.getWritableDatabase();
-        final int deletedCount = db.delete(OfflineDatabaseHandler.TABLE_RESOURCES,
-                "status IS NULL OR TRIM(status) = ''", null);
+        final SQLiteDatabase db = DatabaseState.getOfflineDatabaseHandlerForMapId(context, mapId).getWritableDatabase();
+        final int deletedCount = db.delete(OfflineDatabaseHandler.TABLE_RESOURCES, "status IS NULL OR TRIM(status) = " +
+                "''", null);
         Timber.d("Deleted %d rows", deletedCount);
         return true;
     }

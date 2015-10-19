@@ -1,5 +1,14 @@
 package org.droidplanner.android.fragments;
 
+import java.util.List;
+
+import org.droidplanner.android.activities.interfaces.OnEditorInteraction;
+import org.droidplanner.android.maps.DPMap;
+import org.droidplanner.android.maps.MarkerInfo;
+import org.droidplanner.android.proxy.mission.item.markers.MissionItemMarkerInfo;
+import org.droidplanner.android.proxy.mission.item.markers.PolygonMarkerInfo;
+import org.droidplanner.android.utils.prefs.AutoPanMode;
+
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -11,16 +20,6 @@ import com.o3dr.services.android.lib.coordinate.LatLong;
 import com.o3dr.services.android.lib.drone.attribute.AttributeType;
 import com.o3dr.services.android.lib.drone.mission.item.MissionItem;
 import com.o3dr.services.android.lib.drone.property.Home;
-
-import org.droidplanner.android.activities.interfaces.OnEditorInteraction;
-import org.droidplanner.android.maps.DPMap;
-import org.droidplanner.android.maps.MarkerInfo;
-import org.droidplanner.android.proxy.mission.item.markers.MissionItemMarkerInfo;
-import org.droidplanner.android.proxy.mission.item.markers.PolygonMarkerInfo;
-import org.droidplanner.android.utils.prefs.AutoPanMode;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class EditorMapFragment extends DroneMap implements DPMap.OnMapLongClickListener,
 		DPMap.OnMarkerDragListener, DPMap.OnMapClickListener, DPMap.OnMarkerClickListener {
@@ -132,20 +131,17 @@ public class EditorMapFragment extends DroneMap implements DPMap.OnMapLongClickL
 
 	public void zoomToFit() {
 		// get visible mission coords
-		final List<LatLong> visibleCoords = missionProxy == null ? new ArrayList<LatLong>() : missionProxy.getVisibleCoords();
+		final List<LatLong> visibleCoords = missionProxy.getVisibleCoords();
 
 		// add home coord if visible
-		if(drone != null) {
-			Home home = drone.getAttribute(AttributeType.HOME);
-			if (home != null && home.isValid()) {
-				final LatLong homeCoord = home.getCoordinate();
-				if (homeCoord.getLongitude() != 0 && homeCoord.getLatitude() != 0)
-					visibleCoords.add(homeCoord);
-			}
-		}
+        Home home = drone.getAttribute(AttributeType.HOME);
+        if(home != null ) {
+            final LatLong homeCoord = home.getCoordinate();
+            if (homeCoord != null && homeCoord.getLongitude() != 0 && homeCoord.getLatitude() != 0)
+                visibleCoords.add(homeCoord);
+        }
 
-		if (!visibleCoords.isEmpty())
-			zoomToFit(visibleCoords);
+        zoomToFit(visibleCoords);
 	}
 
     public void zoomToFit(List<LatLong> itemsToFit){

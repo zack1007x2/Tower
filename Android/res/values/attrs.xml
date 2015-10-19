@@ -47,8 +47,4 @@
         <attr name="animateOnClick" format="boolean" />
     </declare-styleable>
 
-    <declare-styleable name="TabPageIndicator" >
-        <attr name="android:textSize" />
-    </declare-styleable>
-
 </resources>

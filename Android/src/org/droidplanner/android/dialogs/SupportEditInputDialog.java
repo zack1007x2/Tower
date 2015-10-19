@@ -1,10 +1,7 @@
 package org.droidplanner.android.dialogs;
 
-import android.app.Activity;
-import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.view.View;
@@ -15,29 +12,21 @@ import org.droidplanner.android.R;
 /**
  * Created by Fredia Huya-Kouadio on 6/17/15.
  */
-public class SupportEditInputDialog extends DialogFragment {
+public class SupportEditInputDialog extends SupportYesNoDialog {
 
-    protected final static String EXTRA_DIALOG_TAG = "extra_dialog_tag";
-    protected final static String EXTRA_TITLE = "title";
     protected static final String EXTRA_HINT = "hint";
-    protected static final String EXTRA_HINT_IS_VALID_ENTRY = "extra_hint_is_valid_entry";
 
     public interface Listener {
-        void onOk(String dialogTag, final CharSequence input);
+        void onOk(final CharSequence input);
 
-        void onCancel(String dialogTag);
+        void onCancel();
     }
 
-    public static SupportEditInputDialog newInstance(String dialogTag, String title, String hint, boolean hintIsValidEntry){
-        if (dialogTag == null)
-            throw new IllegalArgumentException("The dialog tag must not be null!");
-
+    public static SupportEditInputDialog newInstance(String title, String hint, Listener listener){
         SupportEditInputDialog dialog = new SupportEditInputDialog();
 
         Bundle bundle = new Bundle();
-        bundle.putString(EXTRA_DIALOG_TAG, dialogTag);
         bundle.putString(EXTRA_TITLE, title);
-        bundle.putBoolean(EXTRA_HINT_IS_VALID_ENTRY, hintIsValidEntry);
 
         if(hint == null){
             hint = "";
@@ -45,6 +34,7 @@ public class SupportEditInputDialog extends DialogFragment {
         bundle.putString(EXTRA_HINT, hint);
 
         dialog.setArguments(bundle);
+        dialog.mListener = listener;
 
         return dialog;
     }
@@ -53,36 +43,8 @@ public class SupportEditInputDialog extends DialogFragment {
     private EditText mEditText;
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-
-        Object parent = getParentFragment();
-        if(parent == null)
-            parent = activity;
-
-        if (!(parent instanceof Listener)) {
-            throw new IllegalStateException("Parent activity must implement " + Listener.class.getName());
-        }
-
-        mListener = (Listener) parent;
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
-    }
-
-    @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
-        return buildDialog(savedInstanceState).create();
-    }
-
     protected AlertDialog.Builder buildDialog(Bundle savedInstanceState){
         final Bundle arguments = getArguments();
-
-        final String dialogTag = arguments.getString(EXTRA_DIALOG_TAG);
-        final boolean hintIsValidEntry = arguments.getBoolean(EXTRA_HINT_IS_VALID_ENTRY);
 
         final AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
                 .setTitle(arguments.getString(EXTRA_TITLE))
@@ -91,29 +53,26 @@ public class SupportEditInputDialog extends DialogFragment {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         CharSequence input = mEditText.getText();
-                        if (TextUtils.isEmpty(input) && hintIsValidEntry) {
-                            input = mEditText.getHint();
-                        }
+                        if(TextUtils.isEmpty(input)) input = mEditText.getHint();
 
                         String value = null;
-                        if (input != null)
+                        if(input != null)
                             value = input.toString().trim();
 
-                        if (mListener != null)
-                            mListener.onOk(dialogTag, value);
+                        mListener.onOk(value);
                     }
                 })
                 .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        if (mListener != null)
-                            mListener.onCancel(dialogTag);
+                        mListener.onCancel();
                     }
                 });
 
         return builder;
     }
 
+    @Override
     protected View generateContentView(Bundle savedInstanceState){
         final View contentView = getActivity().getLayoutInflater().inflate(R.layout
                 .dialog_edit_input_content, null);

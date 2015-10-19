@@ -16,7 +16,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.o3dr.android.client.Drone;
-import com.o3dr.android.client.apis.FollowApi;
+import com.o3dr.android.client.apis.gcs.FollowApi;
 import com.o3dr.services.android.lib.coordinate.LatLong;
 import com.o3dr.services.android.lib.coordinate.LatLongAlt;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
@@ -29,11 +29,9 @@ import org.droidplanner.android.R;
 import org.droidplanner.android.fragments.DroneMap;
 import org.droidplanner.android.graphic.map.GuidedScanROIMarkerInfo;
 import org.droidplanner.android.maps.MarkerInfo;
-import org.droidplanner.android.utils.Utils;
-import org.droidplanner.android.utils.prefs.DroidPlannerPrefs;
 import org.droidplanner.android.utils.unit.providers.length.LengthUnitProvider;
-import org.droidplanner.android.view.spinnerWheel.CardWheelHorizontalView;
-import org.droidplanner.android.view.spinnerWheel.adapters.LengthWheelAdapter;
+import org.droidplanner.android.widgets.spinnerWheel.CardWheelHorizontalView;
+import org.droidplanner.android.widgets.spinnerWheel.adapters.LengthWheelAdapter;
 
 public class ModeFollowFragment extends ModeGuidedFragment implements OnItemSelectedListener, DroneMap.MapMarkerProvider {
 
@@ -88,17 +86,15 @@ public class ModeFollowFragment extends ModeGuidedFragment implements OnItemSele
         final Context context = getContext();
         final LengthUnitProvider lengthUP = getLengthUnitProvider();
 
-        final DroidPlannerPrefs dpPrefs = getAppPrefs();
-
         final LengthWheelAdapter radiusAdapter = new LengthWheelAdapter(context, R.layout.wheel_text_centered,
-                lengthUP.boxBaseValueToTarget(Utils.MIN_DISTANCE), lengthUP.boxBaseValueToTarget(Utils.MAX_DISTANCE));
+                lengthUP.boxBaseValueToTarget(2), lengthUP.boxBaseValueToTarget(200));
 
         mRadiusWheel = (CardWheelHorizontalView<LengthUnit>) parentView.findViewById(R.id.radius_spinner);
         mRadiusWheel.setViewAdapter(radiusAdapter);
         mRadiusWheel.addScrollListener(this);
 
         final LengthWheelAdapter roiHeightAdapter = new LengthWheelAdapter(context, R.layout.wheel_text_centered,
-                lengthUP.boxBaseValueToTarget(dpPrefs.getMinAltitude()), lengthUP.boxBaseValueToTarget(dpPrefs.getMaxAltitude()));
+                lengthUP.boxBaseValueToTarget(0), lengthUP.boxBaseValueToTarget(200));
 
         roiHeightWheel = (CardWheelHorizontalView<LengthUnit>) parentView.findViewById(R.id.roi_height_spinner);
         roiHeightWheel.setViewAdapter(roiHeightAdapter);
@@ -130,7 +126,7 @@ public class ModeFollowFragment extends ModeGuidedFragment implements OnItemSele
             onFollowTypeUpdate(followType, followState.getParams());
         }
 
-        parent.addMapMarkerProvider(this);
+        parentActivity.addMapMarkerProvider(this);
         getBroadcastManager().registerReceiver(eventReceiver, eventFilter);
     }
 
@@ -188,7 +184,7 @@ public class ModeFollowFragment extends ModeGuidedFragment implements OnItemSele
     @Override
     public void onApiDisconnected() {
         super.onApiDisconnected();
-        parent.removeMapMarkerProvider(this);
+        parentActivity.removeMapMarkerProvider(this);
         getBroadcastManager().unregisterReceiver(eventReceiver);
     }
 
@@ -200,7 +196,7 @@ public class ModeFollowFragment extends ModeGuidedFragment implements OnItemSele
                 if (drone.isConnected()) {
                     Bundle params = new Bundle();
                     params.putDouble(FollowType.EXTRA_FOLLOW_RADIUS, newValue.toBase().getValue());
-                    FollowApi.getApi(drone).updateFollowParams(params);
+                    FollowApi.updateFollowParams(drone, params);
                 }
                 break;
 
@@ -257,7 +253,7 @@ public class ModeFollowFragment extends ModeGuidedFragment implements OnItemSele
 
         Bundle params = new Bundle();
         params.putParcelable(FollowType.EXTRA_FOLLOW_ROI_TARGET, roiCoord);
-        FollowApi.getApi(drone).updateFollowParams(params);
+        FollowApi.updateFollowParams(drone, params);
     }
 
     private void updateROITargetMarker(LatLong target) {
