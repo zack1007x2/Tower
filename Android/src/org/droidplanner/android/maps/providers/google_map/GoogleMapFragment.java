@@ -16,7 +16,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -66,7 +65,10 @@ import com.o3dr.services.android.lib.util.googleApi.GoogleApiClientManager.Googl
 
 import org.droidplanner.android.DroidPlannerApp;
 import org.droidplanner.android.R;
+import org.droidplanner.android.activities.helpers.SuperUI;
+import org.droidplanner.android.data.GpsModel;
 import org.droidplanner.android.fragments.SettingsFragment;
+import org.droidplanner.android.graphic.map.GraphicXmppDrone;
 import org.droidplanner.android.maps.DPMap;
 import org.droidplanner.android.maps.MarkerInfo;
 import org.droidplanner.android.maps.providers.DPMapProvider;
@@ -74,6 +76,7 @@ import org.droidplanner.android.maps.providers.google_map.tiles.mapbox.MapboxTil
 import org.droidplanner.android.maps.providers.google_map.tiles.mapbox.MapboxUtils;
 import org.droidplanner.android.maps.providers.google_map.tiles.mapbox.OfflineTileProvider;
 import org.droidplanner.android.utils.DroneHelper;
+import org.droidplanner.android.utils.collection.BroadCastIntent;
 import org.droidplanner.android.utils.collection.HashBiMap;
 import org.droidplanner.android.utils.prefs.AutoPanMode;
 import org.droidplanner.android.utils.prefs.DroidPlannerPrefs;
@@ -100,11 +103,15 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
     private static final int ONLINE_TILE_PROVIDER_Z_INDEX = -1;
     private static final int OFFLINE_TILE_PROVIDER_Z_INDEX = -2;
 
+    private GraphicXmppDrone graphicDrone;
+
     private static final IntentFilter eventFilter = new IntentFilter();
 
     static {
         eventFilter.addAction(AttributeEvent.GPS_POSITION);
         eventFilter.addAction(SettingsFragment.ACTION_MAP_ROTATION_PREFERENCE_UPDATED);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_GPS_POSITION);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE);
     }
 
     private final static Api<? extends Api.ApiOptions.NotRequiredOptions>[] apisList = new Api[]{LocationServices.API};
@@ -135,6 +142,22 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
                             setupMapUI(googleMap);
                         }
                     });
+                    break;
+                case BroadCastIntent.PROPERTY_DRONE_GPS_POSITION:
+                    //TODO Zack AUTOPANMODE
+//                    if (mPanMode.get() == AutoPanMode.DRONE) {
+                        GpsModel Model = ((SuperUI) getActivity()).mGpsModel;
+                        final LatLong droneLocation = Model.getPosition();
+                        updateCamera(droneLocation);
+
+                        if (graphicDrone == null) {
+                            graphicDrone = new GraphicXmppDrone((SuperUI) getActivity());
+                        }
+                        updateMarker(graphicDrone);
+//                    }
+                    break;
+                case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE:
+
                     break;
             }
         }
@@ -753,7 +776,6 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
 
     private void setupMap() {
         // Make sure the map is initialized
-        Log.d("Zack","SETUP MAP");
         MapsInitializer.initialize(getActivity().getApplicationContext());
 
         getMapAsync(new OnMapReadyCallback() {
@@ -1152,5 +1174,17 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
     @Override
     public void onManagerStopped() {
 
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        getActivity().registerReceiver(eventReceiver, eventFilter);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        getActivity().unregisterReceiver(eventReceiver);
     }
 }

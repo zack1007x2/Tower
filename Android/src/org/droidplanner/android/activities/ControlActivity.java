@@ -65,10 +65,9 @@ import moremote.surface.MyGLSurfaceView;
 
 public class ControlActivity extends JoystickControlActivity implements ConnectionListener{
 
-    private final static String TAG = AccountActivity.class.getSimpleName();
+    private final static String TAG = ControlActivity.class.getSimpleName();
 
 
-    private Spinner mSpinnerMode;
     private int cur_mode = -1;
     private int receive_mode = -1;
     private String MsgTitle = MoApplication.XMPPCommand.DRONE;
@@ -105,10 +104,6 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
                     String Msg_Mode = MsgTitle+ msg_set_mode
                             .MAVLINK_MSG_ID_SET_MODE + "@" + cur_mode;
                     xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg_Mode);
-                    break;
-                case BroadCastIntent.PROPERTY_DRONE_SENT_MODE_FROM_FLIGHT:
-                    Log.d("Zack","PROPERTY_DRONE_SENT_MODE_FROM_FLIGHT");
-
                     break;
             }
         }
@@ -158,45 +153,12 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
         friends = new HashMap<String, UserStatus>();
 
 
-        mSpinnerMode = (Spinner) findViewById(R.id.spinnerMode);
         bt_streaming = (Button) findViewById(R.id.bt_streaming);
         String[] modes = {"Stabilize", "Acro", "Alt Hold", "Auto", "Guided", "Loiter", "RTL",
                 "Circle", "Land", "Drift", "Sport", "Flip", "Autotune", "PosHold", "Brake"};
         ArrayAdapter<String> ModeItem = new ArrayAdapter<String>(this, android.R.layout
                 .simple_spinner_item, modes);
         ModeItem.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        mSpinnerMode.setAdapter(ModeItem);
-
-
-        mSpinnerMode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                Log.d("Zack","OnItemSelected POSITION "+position);
-                cur_mode = (int) DRONE_MODE.getInstance().getDronePositionMap().getKey(position);
-                Log.d("Zack","OnItemSelected "+cur_mode);
-//                String Msg = MsgTitle + msg_set_mode
-//                        .MAVLINK_MSG_ID_SET_MODE + "@" + cur_mode;
-//                xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg);
-                Intent mode_intent = new Intent();
-                mode_intent.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
-                mode_intent.putExtra("mode", cur_mode);
-                sendBroadcast(mode_intent);
-
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-
-        });
-
-        int modeReceive = getIntent().getIntExtra("mode",-1);
-        if(modeReceive!=-1){
-            cur_mode = modeReceive;
-            mSpinnerMode.setSelection((int)DRONE_MODE.getInstance().getDronePositionMap().getKey
-                    (modeReceive));
-        }
 
         surfaceView = (MyGLSurfaceView) findViewById(R.id.GLSurfaceView);
         surfaceView.setBackgroundColor(Color.BLACK);
@@ -220,8 +182,6 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
         xmppConnection.getRoster(friends);
 
         UserStatus item = friends.get(MoApplication.CONNECT_TO);
-
-        Log.d("Zack","UserStatus: Status = "+item.getStatus()+"    Type = "+item.getType());
 
         if(item.getType().equals("available")){
             remote_status = true;
@@ -294,8 +254,6 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
         if (content == null) {
             return;
         }
-
-        Log.d(TAG, content);
         if (content.contains(MoApplication.XMPPCommand.RELAY) && content.length() < 64) {
             runOnUiThread(new Runnable() {
                 @Override

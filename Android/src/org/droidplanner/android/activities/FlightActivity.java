@@ -29,6 +29,7 @@ import com.MAVLink.common.msg_attitude;
 import com.MAVLink.common.msg_global_position_int;
 import com.MAVLink.common.msg_gps_raw_int;
 import com.MAVLink.common.msg_heartbeat;
+import com.MAVLink.common.msg_mission_item;
 import com.MAVLink.common.msg_set_mode;
 import com.MAVLink.common.msg_sys_status;
 import com.MAVLink.common.msg_vfr_hud;
@@ -42,6 +43,7 @@ import com.o3dr.services.android.lib.util.MathUtils;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import org.droidplanner.android.R;
+import org.droidplanner.android.data.UserPerference;
 import org.droidplanner.android.fragments.DroneMap;
 import org.droidplanner.android.fragments.FlightMapFragment;
 import org.droidplanner.android.fragments.TelemetryFragment;
@@ -606,8 +608,6 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
         UserStatus item = friends.get(MoApplication.CONNECT_TO);
 
         if(item!=null){
-            Log.d("Zack","UserStatus: Type = "+item.getType());
-
             if(item.getType().equals("available")){
                 remote_status = true;
                 onDroneConnectionUpdate();
@@ -732,7 +732,7 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
             case msg_global_position_int.MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
                 msg_global_position_int mGpsPosition = (msg_global_position_int)pkt.unpack();
                 mGpsModel.setPosition(mGpsPosition.lat / 1E7, mGpsPosition.lon / 1E7);
-                i.setAction(BroadCastIntent.PROPERTY_DRONE_GPS);
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_GPS_POSITION);
                 break;
             case msg_radio.MAVLINK_MSG_ID_RADIO:
                 msg_radio mRadio = (msg_radio)pkt.unpack();
@@ -754,6 +754,12 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
                 MoApplication.CUR_MODE = curMode;
                 i.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE);
                 i.putExtra("Mode",curMode);
+                break;
+            case msg_mission_item.MAVLINK_MSG_ID_MISSION_ITEM:
+                //setHome
+
+
+
                 break;
         }
         sendBroadcast(i);
@@ -777,7 +783,6 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
 
     @Override
     public void connected(XMPPConnection xmppConnection) {
-        Log.d("Zack","connected");
         remote_status = true;
         onDroneConnectionUpdate();
     }
@@ -845,28 +850,33 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
 
     private void onDroneConnectionUpdate(){
         boolean isConnect = remote_status && receive_heartbeat;
-
-        if(isConnect){
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    enableControlFrag(true);
-                }
-            });
-            Intent i = new Intent();
-            i.setAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE);
-            sendBroadcast(i);
-        }else{
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    enableControlFrag(false);
-                }
-            });
-            Intent i = new Intent();
-            i.setAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE);
-            sendBroadcast(i);
+        if(isConnect != UserPerference.getUserPerference(this).getIsDroneConnected()){
+            UserPerference.getUserPerference(this).setIsDroneConnected(isConnect);
+            if(isConnect){
+                Log.d("Zack","DRONE CONNECTED!!");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        enableControlFrag(true);
+                    }
+                });
+                Intent i = new Intent();
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE);
+                sendBroadcast(i);
+            }else{
+                Log.d("Zack","DRONE DISCONNECTED!!");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        enableControlFrag(false);
+                    }
+                });
+                Intent i = new Intent();
+                i.setAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE);
+                sendBroadcast(i);
+            }
         }
+
 
 
     }

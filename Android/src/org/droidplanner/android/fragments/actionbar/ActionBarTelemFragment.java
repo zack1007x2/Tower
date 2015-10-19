@@ -14,7 +14,6 @@ import android.widget.PopupWindow;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import com.google.android.gms.analytics.HitBuilders;
 import com.o3dr.android.client.Drone;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
 import com.o3dr.services.android.lib.drone.attribute.AttributeType;
@@ -35,7 +34,6 @@ import org.droidplanner.android.data.GpsModel;
 import org.droidplanner.android.data.SignalModel;
 import org.droidplanner.android.fragments.SettingsFragment;
 import org.droidplanner.android.fragments.helpers.ApiListenerFragment;
-import org.droidplanner.android.utils.analytics.GAUtils;
 import org.droidplanner.android.utils.collection.BroadCastIntent;
 import org.droidplanner.android.utils.prefs.DRONE_MODE;
 import org.droidplanner.android.utils.prefs.DroidPlannerPrefs;
@@ -140,6 +138,7 @@ public class ActionBarTelemFragment extends ApiListenerFragment {
                     break;
                 case BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE:
                     if(intent.getIntExtra("Mode",-2)!=curMode){
+                        Log.d("Zack","Receive Mode change");
                         curMode = intent.getIntExtra("Mode", -2);
                         updateFlightModeTelem(curMode);
                     }
@@ -259,24 +258,6 @@ public class ActionBarTelemFragment extends ApiListenerFragment {
             hideTelemBar();
 
         flightModeTelem.setAdapter(modeAdapter);
-        flightModeTelem.setOnSpinnerItemSelectedListener(new SpinnerSelfSelect.OnSpinnerItemSelectedListener() {
-            @Override
-            public void onSpinnerItemSelected(Spinner spinner, int position) {
-                final Drone drone = getDrone();
-                if (drone.isConnected()) {
-                    final VehicleMode newMode = (VehicleMode) spinner.getItemAtPosition(position);
-                    drone.changeVehicleMode(newMode);
-
-                    //Record the attempt to change flight modes
-                    final HitBuilders.EventBuilder eventBuilder = new HitBuilders.EventBuilder()
-                            .setCategory(GAUtils.Category.FLIGHT)
-                            .setAction("Flight mode changed")
-                            .setLabel(newMode.getLabel());
-                    GAUtils.sendEvent(eventBuilder);
-                }
-            }
-        });
-
         updateAllTelem();
         getBroadcastManager().registerReceiver(eventReceiver, eventFilter);
     }
@@ -630,10 +611,19 @@ public class ActionBarTelemFragment extends ApiListenerFragment {
 
 
     private void updateFlightModeTelem(int mode) {
-        Log.d("Zack", "updateFlightModeTelem = " + mode);
         mode = (int)DRONE_MODE.getInstance().getDronePositionMap().getValue(mode);
         flightModeTelem.forcedSetSelection(mode);
-        flightModeTelem.setClickable(false);
+        flightModeTelem.setOnSpinnerItemSelectedListener(new SpinnerSelfSelect.OnSpinnerItemSelectedListener() {
+            @Override
+            public void onSpinnerItemSelected(Spinner spinner, int position) {
+                int cur_mode = (int) DRONE_MODE.getInstance().getDronePositionMap().getKey
+                        (position);
+                Intent mode_intent = new Intent();
+                mode_intent.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
+                mode_intent.putExtra("mode", cur_mode);
+                getActivity().sendBroadcast(mode_intent);
+            }
+        });
 
     }
 

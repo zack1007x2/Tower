@@ -47,17 +47,10 @@ public class FlightControlManagerFragment extends ApiListenerFragment {
                     selectActionsBar(type == null ? -1 : type.getDroneType());
                     break;
 				case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE:
-					if(!isxmppAvaliable){
-						isxmppAvaliable = true;
 						selectActionsBar(Type.TYPE_COPTER);
-					}
 					break;
 				case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE:
-					if(isxmppAvaliable){
 						selectActionsBar(-1);
-						isxmppAvaliable = false;
-					}
-
 					break;
 			}
 		}
