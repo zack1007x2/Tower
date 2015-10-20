@@ -26,8 +26,6 @@ public class FlightControlManagerFragment extends ApiListenerFragment {
 		boolean isSlidingUpPanelEnabled(Drone drone);
 	}
 
-	private boolean isxmppAvaliable;
-
 	private static final IntentFilter eventFilter = new IntentFilter();
     static {
         eventFilter.addAction(AttributeEvent.TYPE_UPDATED);

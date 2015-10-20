@@ -93,6 +93,8 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
 
     private HashMap<String, UserStatus> friends;
 
+    private boolean cur_connect_state;
+
     private boolean remote_status, receive_heartbeat;
 
 
@@ -107,6 +109,7 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
         eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_ATTITUDE);
         eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
         eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_ARM_STATE_CHANGE);
+        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_XMPP_START_LOGIN);
     }
 
     private final BroadcastReceiver eventReceiver = new BroadcastReceiver() {
@@ -154,6 +157,9 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
                     break;
                 case BroadCastIntent.PROPERTY_DRONE_ARM_STATE_CHANGE:
 
+                    break;
+                case BroadCastIntent.PROPERTY_DRONE_XMPP_START_LOGIN:
+                    login();
                     break;
             }
         }
@@ -257,7 +263,7 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_flight);
-
+        UserPerference.getUserPerference(this).setIsDroneConnected(false);
 
         friends = new HashMap<String, UserStatus>();
 
@@ -372,7 +378,6 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
             openActionDrawer();
 
         settings = getSharedPreferences(getResources().getString(R.string.app_title), 0);
-        login();
     }
 
     @Override
@@ -778,7 +783,6 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
             xmppConnection.removeMessageListener(xmppMessageListener);
             xmppMessageListener = null;
         }
-
     }
 
     @Override
@@ -817,7 +821,7 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
 
     @Override
     public void reconnectionFailed(Exception e) {
-//        remote_status = false;
+        remote_status = false;
         onDroneConnectionUpdate();
     }
 
@@ -836,7 +840,7 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
         friends.put(friendName, item);
 
 
-        if(friendName.equals(MoApplication.CONNECT_TO) && presence.getType().name().equals
+        if (friendName.equals(MoApplication.CONNECT_TO) && presence.getType().name().equals
                 (MoApplication.friendType.available)){
             remote_status = true;
             onDroneConnectionUpdate();
@@ -850,24 +854,26 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
 
     private void onDroneConnectionUpdate(){
         boolean isConnect = remote_status && receive_heartbeat;
-        if(isConnect != UserPerference.getUserPerference(this).getIsDroneConnected()){
-            UserPerference.getUserPerference(this).setIsDroneConnected(isConnect);
-            if(isConnect){
-                Log.d("Zack","DRONE CONNECTED!!");
+        UserPerference.getUserPerference(this).setIsDroneConnected(isConnect);
+        if(isConnect != cur_connect_state) {
+            if (isConnect) {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        Toast.makeText(FlightActivity.this, "CONNECTED TO DRONE", Toast
+                                .LENGTH_SHORT).show();
                         enableControlFrag(true);
                     }
                 });
                 Intent i = new Intent();
                 i.setAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE);
                 sendBroadcast(i);
-            }else{
-                Log.d("Zack","DRONE DISCONNECTED!!");
+            } else {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        Toast.makeText(FlightActivity.this, "DISCONNECTED TO DRONE", Toast
+                                .LENGTH_SHORT).show();
                         enableControlFrag(false);
                     }
                 });
@@ -876,9 +882,7 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
                 sendBroadcast(i);
             }
         }
-
-
-
+        cur_connect_state = isConnect;
     }
 
     @Override
@@ -890,6 +894,9 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
     @Override
     public void onResume() {
         super.onResume();
+        onDroneConnectionUpdate();
         registerReceiver(eventReceiver, eventFilter);
     }
+
+
 }

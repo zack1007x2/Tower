@@ -27,6 +27,7 @@ import org.droidplanner.android.notifications.NotificationHandler;
 import org.droidplanner.android.proxy.mission.MissionProxy;
 import org.droidplanner.android.utils.Utils;
 import org.droidplanner.android.utils.analytics.GAUtils;
+import org.droidplanner.android.utils.collection.BroadCastIntent;
 import org.droidplanner.android.utils.file.IO.ExceptionWriter;
 import org.droidplanner.android.utils.prefs.DroidPlannerPrefs;
 
@@ -230,14 +231,21 @@ public class DroidPlannerApp extends MoApplication implements DroneListener, Tow
         if (connParams == null)
             return;
 
-        boolean isDroneConnected = drone.isConnected();
-        if (!connParams.equals(drone.getConnectionParameter()) && isDroneConnected) {
-            drone.disconnect();
-            isDroneConnected = false;
-        }
+        if(connParams.getConnectionType()==4){
+            //TODO CONNECT XMPP
+            Intent i = new Intent();
+            i.setAction(BroadCastIntent.PROPERTY_DRONE_XMPP_START_LOGIN);
+            sendBroadcast(i);
+        }else{
+            boolean isDroneConnected = drone.isConnected();
+            if (!connParams.equals(drone.getConnectionParameter()) && isDroneConnected) {
+                drone.disconnect();
+                isDroneConnected = false;
+            }
 
-        if (!isDroneConnected)
-            drone.connect(connParams);
+            if (!isDroneConnected)
+                drone.connect(connParams);
+        }
     }
 
     public static void connectToDrone(Context context) {
@@ -305,6 +313,10 @@ public class DroidPlannerApp extends MoApplication implements DroneListener, Tow
                     extraParams.putString(ConnectionType.EXTRA_BLUETOOTH_ADDRESS, btAddress);
                     connParams = new ConnectionParameter(connectionType, extraParams, droneSharePrefs);
                 }
+                break;
+            //Type XMPP
+            case 4:
+                connParams = new ConnectionParameter(connectionType, extraParams, droneSharePrefs);
                 break;
 
             default:

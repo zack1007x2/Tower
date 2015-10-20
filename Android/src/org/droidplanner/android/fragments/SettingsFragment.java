@@ -450,7 +450,10 @@ public class SettingsFragment extends PreferenceFragment implements OnSharedPref
             case ConnectionType.TYPE_BLUETOOTH:
                 connectionName = "BLUETOOTH";
                 break;
-//            case ConnectionType
+            //TYPE XMPP
+            case 4:
+                connectionName = "XMPP";
+                break;
             default:
                 connectionName = null;
                 break;

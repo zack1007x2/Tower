@@ -147,6 +147,7 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
                     setupButtonsForDisarmed();
                     break;
                 case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE:
+                    setupButtonsForDisconnected();
                     break;
             }
         }

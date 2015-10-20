@@ -145,19 +145,20 @@ public class GoogleMapFragment extends SupportMapFragment implements DPMap, Goog
                     break;
                 case BroadCastIntent.PROPERTY_DRONE_GPS_POSITION:
                     //TODO Zack AUTOPANMODE
-//                    if (mPanMode.get() == AutoPanMode.DRONE) {
-                        GpsModel Model = ((SuperUI) getActivity()).mGpsModel;
-                        final LatLong droneLocation = Model.getPosition();
-                        updateCamera(droneLocation);
+                    GpsModel Model = ((SuperUI) getActivity()).mGpsModel;
+                    final LatLong droneLocation = Model.getPosition();
+                    updateCamera(droneLocation);
 
-                        if (graphicDrone == null) {
-                            graphicDrone = new GraphicXmppDrone((SuperUI) getActivity());
-                        }
-                        updateMarker(graphicDrone);
-//                    }
+                    if (graphicDrone == null) {
+                        graphicDrone = new GraphicXmppDrone((SuperUI) getActivity());
+                    }
+                    updateMarker(graphicDrone);
                     break;
                 case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE:
 
+                    break;
+                case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE:
+                    clearMarkers();
                     break;
             }
         }
