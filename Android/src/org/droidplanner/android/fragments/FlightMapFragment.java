@@ -13,16 +13,12 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.model.LatLng;
-import com.o3dr.android.client.apis.VehicleApi;
 import com.o3dr.services.android.lib.coordinate.LatLong;
-import com.o3dr.services.android.lib.coordinate.LatLongAlt;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
 import com.o3dr.services.android.lib.drone.attribute.AttributeType;
 import com.o3dr.services.android.lib.drone.property.Gps;
 import com.o3dr.services.android.lib.drone.property.GuidedState;
-import com.o3dr.services.android.lib.drone.property.Home;
 import com.o3dr.services.android.lib.drone.property.State;
-import com.o3dr.services.android.lib.model.AbstractCommandListener;
 
 import org.droidplanner.android.R;
 import org.droidplanner.android.dialogs.GuidedDialog;
@@ -32,8 +28,6 @@ import org.droidplanner.android.maps.DPMap;
 import org.droidplanner.android.maps.MarkerInfo;
 import org.droidplanner.android.utils.DroneHelper;
 import org.droidplanner.android.utils.prefs.AutoPanMode;
-
-import timber.log.Timber;
 
 public class FlightMapFragment extends DroneMap implements DPMap.OnMapLongClickListener,
         DPMap.OnMarkerClickListener, DPMap.OnMarkerDragListener, GuidedDialogListener {

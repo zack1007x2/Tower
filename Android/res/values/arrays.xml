@@ -24,6 +24,7 @@
         <item name="TCP">TCP</item>
         <item name="UDP">UDP</item>
         <item name="BLUETOOTH">BLUETOOTH</item>
+        <item name="XMPP">XMPP</item>
     </string-array>
 
     <!--
@@ -35,6 +36,7 @@
         <item name="TCP">2</item>
         <item name="UDP">1</item>
         <item name="BLUETOOTH">3</item>
+        <item name="XMPP">4</item>
     </string-array>
 
 
