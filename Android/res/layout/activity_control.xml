@@ -26,7 +26,6 @@
                 android:layout_height="wrap_content"
                 android:text="Start Streaming"
                 android:id="@+id/bt_streaming"
-                android:layout_gravity="center_horizontal|bottom"
                 android:layout_centerHorizontal="true"
                 android:layout_alignParentBottom="true"
                 />
@@ -37,13 +36,12 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentBottom="true"
                 android:layout_alignParentRight="true"
-                android:layout_gravity="right|bottom"
                 >
 
-                <org.droidplanner.android.widgets.JoystickView
+                <org.droidplanner.android.widgets.joyStick.JoystickView
                     android:id="@+id/joystick_right"
-                    android:layout_width="@dimen/size_80"
-                    android:layout_height="@dimen/size_80"
+                    android:layout_width="@dimen/size_90"
+                    android:layout_height="@dimen/size_90"
                     android:layout_below="@+id/tvFB"
                     android:layout_toRightOf="@+id/tvRL" />
 
@@ -71,30 +69,44 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentBottom="true"
                 android:layout_alignParentLeft="true"
-                android:layout_gravity="left|bottom"
                 >
 
-                <org.droidplanner.android.widgets.CusJoystickView
-                    android:id="@+id/joystick_left"
-                    android:layout_width="@dimen/size_80"
-                    android:layout_height="@dimen/size_80"
-                    android:layout_below="@+id/tvPower" />
-
-                <TextView
-                    android:id="@+id/tvPower"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                <org.droidplanner.android.widgets.joyStick.LiftView
+                    android:id="@+id/joystick_lift"
+                    android:layout_width="@dimen/size_30"
+                    android:layout_height="@dimen/size_90"
                     android:layout_centerHorizontal="true"
-                    android:text="power" />
+                    android:layout_below="@+id/joystick_rotate" />
+                <org.droidplanner.android.widgets.joyStick.RotateView
+                    android:id="@+id/joystick_rotate"
+                    android:layout_width="@dimen/size_90"
+                    android:layout_height="@dimen/size_30"
+                    android:layout_centerHorizontal="true"
+                    android:layout_below="@+id/tvRotate" />
+
                 <TextView
                     android:id="@+id/tvRotate"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_centerVertical="true"
-                    android:layout_toRightOf="@id/joystick_left"
+                    android:layout_centerHorizontal="true"
                     android:text="Rotate" />
+                <TextView
+                    android:id="@+id/tvPower"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_toRightOf="@id/joystick_rotate"
+                    android:text="Power" />
 
             </RelativeLayout>
+
+            <ToggleButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/tbRC"
+                android:layout_alignTop="@+id/relativeLayout1"
+                android:layout_centerHorizontal="true"
+                android:checked="false"/>
 
         </RelativeLayout>
     </RelativeLayout>

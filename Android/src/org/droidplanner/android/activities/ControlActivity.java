@@ -12,13 +12,11 @@ import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import com.MAVLink.MAVLinkPacket;
 import com.MAVLink.Parser;
@@ -36,9 +34,9 @@ import org.droidplanner.android.R;
 import org.droidplanner.android.fragments.XmppControlFragment;
 import org.droidplanner.android.utils.Utils;
 import org.droidplanner.android.utils.collection.BroadCastIntent;
-import org.droidplanner.android.utils.prefs.DRONE_MODE;
-import org.droidplanner.android.widgets.CusJoystickView;
-import org.droidplanner.android.widgets.JoystickView;
+import org.droidplanner.android.widgets.joyStick.JoystickView;
+import org.droidplanner.android.widgets.joyStick.LiftView;
+import org.droidplanner.android.widgets.joyStick.RotateView;
 import org.jivesoftware.smack.Chat;
 import org.jivesoftware.smack.ConnectionListener;
 import org.jivesoftware.smack.MessageListener;
@@ -80,7 +78,6 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
     private RelayClient relayClient;
     public MulticastSocket socket;
     public Button bt_streaming;
-    protected TextView tvRL, tvFB, tvPower, tvRotate;
     private boolean remote_status;
 
     private HashMap<String, UserStatus> friends;
@@ -137,22 +134,7 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
     }
 
     private void initView() {
-        joystick_left = (CusJoystickView) findViewById(R.id.joystick_left);
-        joystick_right = (JoystickView) findViewById(R.id.joystick_right);
-
-        tvRL = (TextView) findViewById(R.id.tvRL);
-        tvFB = (TextView) findViewById(R.id.tvFB);
-        tvPower = (TextView) findViewById(R.id.tvPower);
-        tvRotate = (TextView) findViewById(R.id.tvRotate);
-
-        joystick_left.setOnJoystickMoveListener(mLeftOnJoystickMoveListener, CusJoystickView
-                .DEFAULT_LOOP_INTERVAL);
-
-        joystick_right.setOnJoystickMoveListener(mRightOnJoystickMoveListener, JoystickView.DEFAULT_LOOP_INTERVAL);
-
         friends = new HashMap<String, UserStatus>();
-
-
         bt_streaming = (Button) findViewById(R.id.bt_streaming);
         String[] modes = {"Stabilize", "Acro", "Alt Hold", "Auto", "Guided", "Loiter", "RTL",
                 "Circle", "Land", "Drift", "Sport", "Flip", "Autotune", "PosHold", "Brake"};
@@ -162,6 +144,20 @@ public class ControlActivity extends JoystickControlActivity implements Connecti
 
         surfaceView = (MyGLSurfaceView) findViewById(R.id.GLSurfaceView);
         surfaceView.setBackgroundColor(Color.BLACK);
+
+        tvRL = (TextView) findViewById(R.id.tvRL);
+        tvFB = (TextView) findViewById(R.id.tvFB);
+        tvPower = (TextView) findViewById(R.id.tvPower);
+        tvRotate = (TextView) findViewById(R.id.tvRotate);
+
+        joystick_right = (JoystickView) findViewById(R.id.joystick_right);
+        joystick_right.setOnJoystickMoveListener(mRightOnJoystickMoveListener, JoystickView.DEFAULT_LOOP_INTERVAL);
+        joystick_lift = (LiftView)findViewById(R.id.joystick_lift);
+        joystick_rotate = (RotateView)findViewById(R.id.joystick_rotate);
+        joystick_lift.setOnLiftPowerMoveListener(mLiftPowerMoveListener, LiftView.DEFAULT_LOOP_INTERVAL);
+        joystick_rotate.setOnRotateListener(mRotateListener, RotateView.DEFAULT_LOOP_INTERVAL);
+        tbRC = (ToggleButton) findViewById(R.id.tbRC);
+        tbRC.setOnCheckedChangeListener(mToggleChangedListener);
     }
 
     @Override

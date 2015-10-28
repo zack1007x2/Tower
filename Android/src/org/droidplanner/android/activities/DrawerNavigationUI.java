@@ -237,7 +237,7 @@ public abstract class DrawerNavigationUI extends SuperUI implements SlidingDrawe
 
         setupNavigationEntry(navDrawerEntryId, mNavViewsHolder.mEditor, new Intent(context, EditorActivity.class));
 
-        if(enable)
+//        if(enable)
             setupNavigationEntry(navDrawerEntryId, mNavViewsHolder.mControl, new Intent(context, ControlActivity.class));
 
         setupNavigationEntry(navDrawerEntryId, mNavViewsHolder.mLocator, new Intent(context, LocatorActivity.class));
