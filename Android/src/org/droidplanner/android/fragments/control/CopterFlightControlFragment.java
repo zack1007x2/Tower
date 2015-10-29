@@ -1,10 +1,12 @@
 package org.droidplanner.android.fragments.control;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,6 +45,7 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
     private static final String ACTION_FLIGHT_ACTION_BUTTON = "Copter flight action button";
     private int curMode = -1;
     private int curState = -1;
+    private Context mContext;
 
     private boolean isConnected, isflaying, isArmed;
 
@@ -575,14 +578,15 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-        getActivity().registerReceiver(eventReceiver,eventFilter);
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        mContext = activity.getApplicationContext();
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(eventReceiver, eventFilter);
     }
 
     @Override
-    public void onPause() {
-        super.onPause();
-        getActivity().unregisterReceiver(eventReceiver);
+    public void onDetach() {
+        super.onDetach();
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(eventReceiver);
     }
 }

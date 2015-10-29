@@ -1,5 +1,6 @@
 package org.droidplanner.android.fragments;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -10,6 +11,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -139,6 +141,7 @@ public class TelemetryFragment extends ApiListenerFragment {
     private TextView altitude;
     private TextView flightTimer;
     private boolean headingModeFPV;
+    private Context mContext;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -289,17 +292,16 @@ public class TelemetryFragment extends ApiListenerFragment {
         }
     }
 
-
-
     @Override
-    public void onResume() {
-        super.onResume();
-        getActivity().registerReceiver(eventReceiver, eventFilter);
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        mContext = activity.getApplicationContext();
+        LocalBroadcastManager.getInstance(mContext).registerReceiver(eventReceiver, eventFilter);
     }
 
     @Override
-    public void onPause() {
-        super.onPause();
-        getActivity().unregisterReceiver(eventReceiver);
+    public void onDetach() {
+        super.onDetach();
+        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(eventReceiver);
     }
 }

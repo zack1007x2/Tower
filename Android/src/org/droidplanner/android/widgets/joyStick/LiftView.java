@@ -12,7 +12,7 @@ import android.view.View;
 public class LiftView extends View implements Runnable {
 	// Constants
 	private final double RAD = 57.2957795;
-	public final static long DEFAULT_LOOP_INTERVAL = 200; // 200 ms
+	public final static long DEFAULT_LOOP_INTERVAL = 500; // 200 ms
 	public final static int FRONT = 3;
 	public final static int FRONT_RIGHT = 2;
 	public final static int RIGHT = 1;

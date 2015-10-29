@@ -1,5 +1,6 @@
 package org.droidplanner.android.fragments.control;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -7,6 +8,7 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -55,6 +57,7 @@ public class FlightControlManagerFragment extends ApiListenerFragment {
 	};
 
 	private SlidingUpHeader header;
+	private Context mContext;
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -113,14 +116,15 @@ public class FlightControlManagerFragment extends ApiListenerFragment {
 	}
 
 	@Override
-	public void onResume() {
-		super.onResume();
-		getActivity().registerReceiver(eventReceiver, eventFilter);
+	public void onAttach(Activity activity) {
+		super.onAttach(activity);
+		mContext = activity.getApplicationContext();
+		LocalBroadcastManager.getInstance(mContext).registerReceiver(eventReceiver, eventFilter);
 	}
 
 	@Override
-	public void onPause() {
-		super.onPause();
-		getActivity().unregisterReceiver(eventReceiver);
+	public void onDetach() {
+		super.onDetach();
+		LocalBroadcastManager.getInstance(mContext).unregisterReceiver(eventReceiver);
 	}
 }

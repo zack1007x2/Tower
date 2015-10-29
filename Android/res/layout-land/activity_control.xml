@@ -6,102 +6,120 @@
 
     <include layout="@layout/actionbar_toolbar"/>
 
-    <RelativeLayout
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <moremote.surface.MyGLSurfaceView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/GLSurfaceView"/>
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <moremote.surface.MyGLSurfaceView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/GLSurfaceView"/>
+        </RelativeLayout>
 
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_margin="@dimen/size_5"
-            android:id="@+id/droneshare_control">
-
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Start Streaming"
-                android:id="@+id/bt_streaming"
-                android:layout_centerHorizontal="true"
-                android:layout_alignParentBottom="true"
-                />
+            android:layout_height="match_parent">
 
             <RelativeLayout
-                android:id="@+id/relativeLayout2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"
-                android:layout_alignParentRight="true"
-                android:layout_gravity="right|bottom"
-                >
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="@dimen/size_5"
+                android:id="@+id/droneshare_control">
 
-                <org.droidplanner.android.widgets.joyStick.JoystickView
-                    android:id="@+id/joystick_right"
-                    android:layout_width="@dimen/size_110"
-                    android:layout_height="@dimen/size_110"
-                    android:layout_below="@+id/tvFB"
-                    android:layout_toRightOf="@+id/tvRL" />
-
-                <TextView
-                    android:id="@+id/tvFB"
+                <Button
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:text="Start Streaming"
+                    android:id="@+id/bt_streaming"
                     android:layout_centerHorizontal="true"
-                    android:text="Foreward/\nBackWard" />
+                    android:layout_alignParentBottom="true"
+                    />
 
-                <TextView
-                    android:id="@+id/tvRL"
+                <RelativeLayout
+                    android:id="@+id/relativeLayout2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:layout_alignParentRight="true"
+                    android:layout_gravity="right|bottom"
+                    >
+
+                    <org.droidplanner.android.widgets.joyStick.JoystickView
+                        android:id="@+id/joystick_right"
+                        android:layout_width="@dimen/size_110"
+                        android:layout_height="@dimen/size_110"
+                        android:layout_below="@+id/tvFB"
+                        android:layout_toRightOf="@+id/tvRL" />
+
+                    <TextView
+                        android:id="@+id/tvFB"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerHorizontal="true"
+                        android:text="Foreward/\nBackWard" />
+
+                    <TextView
+                        android:id="@+id/tvRL"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentLeft="true"
+                        android:layout_centerVertical="true"
+                        android:text="Left/\nRight" />
+                </RelativeLayout>
+
+
+
+                <RelativeLayout
+                    android:id="@+id/relativeLayout1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
                     android:layout_alignParentLeft="true"
-                    android:layout_centerVertical="true"
-                    android:text="Left/\nRight" />
-            </RelativeLayout>
+                    android:layout_gravity="left|bottom"
+                    >
 
+                    <org.droidplanner.android.widgets.joyStick.LiftView
+                        android:id="@+id/joystick_lift"
+                        android:layout_width="@dimen/size_30"
+                        android:layout_height="@dimen/size_90"
+                        android:layout_centerHorizontal="true"
+                        android:layout_below="@+id/joystick_rotate" />
+                    <org.droidplanner.android.widgets.joyStick.RotateView
+                        android:id="@+id/joystick_rotate"
+                        android:layout_width="@dimen/size_90"
+                        android:layout_height="@dimen/size_30"
+                        android:layout_below="@+id/tvRotate" />
 
+                    <TextView
+                        android:id="@+id/tvRotate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerHorizontal="true"
+                        android:text="Rotate" />
+                    <TextView
+                        android:id="@+id/tvPower"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerVertical="true"
+                        android:layout_toRightOf="@id/joystick_lift"
+                        android:text="Power" />
 
-            <RelativeLayout
-                android:id="@+id/relativeLayout1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"
-                android:layout_alignParentLeft="true"
-                android:layout_gravity="left|bottom"
-                >
+                </RelativeLayout>
 
-                <org.droidplanner.android.widgets.joyStick.LiftView
-                    android:id="@+id/joystick_lift"
-                    android:layout_width="@dimen/size_30"
-                    android:layout_height="@dimen/size_90"
-                    android:layout_centerHorizontal="true"
-                    android:layout_below="@+id/joystick_rotate" />
-                <org.droidplanner.android.widgets.joyStick.RotateView
-                    android:id="@+id/joystick_rotate"
-                    android:layout_width="@dimen/size_90"
-                    android:layout_height="@dimen/size_30"
-                    android:layout_below="@+id/tvRotate" />
-
-                <TextView
-                    android:id="@+id/tvRotate"
+                <ToggleButton
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:id="@+id/tbRC"
+                    android:layout_above="@+id/bt_streaming"
                     android:layout_centerHorizontal="true"
-                    android:text="Rotate" />
-                <TextView
-                    android:id="@+id/tvPower"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_centerVertical="true"
-                    android:layout_toRightOf="@id/joystick_lift"
-                    android:text="Power" />
+                    android:checked="false"/>
 
             </RelativeLayout>
-
         </RelativeLayout>
-    </RelativeLayout>
+    </FrameLayout>
 
 </LinearLayout>
