@@ -26,6 +26,7 @@ import com.MAVLink.MAVLinkPacket;
 import com.MAVLink.Parser;
 import com.MAVLink.ardupilotmega.msg_radio;
 import com.MAVLink.common.msg_attitude;
+import com.MAVLink.common.msg_command_long;
 import com.MAVLink.common.msg_global_position_int;
 import com.MAVLink.common.msg_gps_raw_int;
 import com.MAVLink.common.msg_heartbeat;
@@ -33,6 +34,9 @@ import com.MAVLink.common.msg_mission_item;
 import com.MAVLink.common.msg_set_mode;
 import com.MAVLink.common.msg_sys_status;
 import com.MAVLink.common.msg_vfr_hud;
+import com.MAVLink.enums.MAV_CMD;
+import com.MAVLink.enums.MAV_MODE_FLAG;
+import com.MAVLink.enums.MAV_STATE;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.o3dr.android.client.Drone;
@@ -95,7 +99,7 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
 
     private boolean cur_connect_state;
 
-    private boolean remote_status, receive_heartbeat;
+    private boolean remote_status, receive_heartbeat,wasFlying;
 
 
     static {
@@ -106,10 +110,10 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
         eventFilter.addAction(AttributeEvent.STATE_UPDATED);
         eventFilter.addAction(AttributeEvent.FOLLOW_START);
         eventFilter.addAction(AttributeEvent.MISSION_DRONIE_CREATED);
-        eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_ATTITUDE);
         eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
         eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_ARM_STATE_CHANGE);
         eventFilter.addAction(BroadCastIntent.PROPERTY_DRONE_XMPP_START_LOGIN);
+        eventFilter.addAction(BroadCastIntent.COMMAND_DRONE_TAKE_OFF);
     }
 
     private final BroadcastReceiver eventReceiver = new BroadcastReceiver() {
@@ -152,14 +156,21 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
                             .MAVLINK_MSG_ID_SET_MODE + "@" + curMode;
                     xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg);
                     break;
-                case BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE:
-
-                    break;
                 case BroadCastIntent.PROPERTY_DRONE_ARM_STATE_CHANGE:
-
+                    boolean arm = intent.getBooleanExtra("arm",false);
+                    int armint = arm ? 1 : 0;
+                    String Msg_arm = MoApplication.XMPPCommand.DRONE + msg_command_long
+                            .MAVLINK_MSG_ID_COMMAND_LONG+ "@"+ MAV_CMD.MAV_CMD_COMPONENT_ARM_DISARM+"@"+armint;
+                    Log.d("Zack", "MAXXX = "+Msg_arm);
+                    xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg_arm);
                     break;
                 case BroadCastIntent.PROPERTY_DRONE_XMPP_START_LOGIN:
                     login();
+                    break;
+                case BroadCastIntent.COMMAND_DRONE_TAKE_OFF:
+                    String Msg_take_off = MoApplication.XMPPCommand.DRONE + msg_command_long
+                            .MAVLINK_MSG_ID_COMMAND_LONG+"@"+MAV_CMD.MAV_CMD_COMPONENT_ARM_DISARM;
+                    xmppConnection.sendMessage(MoApplication.CONNECT_TO, Msg_take_off);
                     break;
             }
         }
@@ -654,11 +665,11 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
             });
             return;
         } else if (content.contains(MoApplication.XMPPCommand.DRONE)) {
-            if(fragmentManager.findFragmentById(R.id.flightActionsFragment)!=null){
-                if(!fragmentManager.findFragmentById(R.id.flightActionsFragment).isHidden()){
-                    fragmentManager.beginTransaction().hide(flightActions).commit();
-                }
-            }
+//            if(fragmentManager.findFragmentById(R.id.flightActionsFragment)!=null){
+//                if(!fragmentManager.findFragmentById(R.id.flightActionsFragment).isHidden()){
+//                    fragmentManager.beginTransaction().hide(flightActions).commit();
+//                }
+//            }
             if(content.contains("@FROM_DRONE")){
                 Parser drone_parser = new Parser();
                 String[] pktArr = content.split(MoApplication.XMPPCommand.DRONE + "@FROM_DRONE");
@@ -757,8 +768,17 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
                 msg_heartbeat mMode = (msg_heartbeat)pkt.unpack();
                 curMode = (int)mMode.custom_mode;
                 MoApplication.CUR_MODE = curMode;
+                short systemStatus = mMode.system_status;
+
+                final boolean isFlying = systemStatus == MAV_STATE.MAV_STATE_ACTIVE
+                        || (wasFlying
+                        && (systemStatus == MAV_STATE.MAV_STATE_CRITICAL || systemStatus == MAV_STATE.MAV_STATE_EMERGENCY));
                 i.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE);
-                i.putExtra("Mode",curMode);
+                i.putExtra("Mode", curMode);
+                i.putExtra("Arm",(mMode.base_mode & MAV_MODE_FLAG.MAV_MODE_FLAG_SAFETY_ARMED) ==
+                        MAV_MODE_FLAG.MAV_MODE_FLAG_SAFETY_ARMED);
+                i.putExtra("Fly",isFlying);
+                wasFlying =isFlying;
                 break;
             case msg_mission_item.MAVLINK_MSG_ID_MISSION_ITEM:
                 //setHome
@@ -845,17 +865,17 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
             remote_status = true;
             onDroneConnectionUpdate();
 
-        }else{
+        } else {
             remote_status = false;
             onDroneConnectionUpdate();
         }
 
     }
 
-    private void onDroneConnectionUpdate(){
+    private void onDroneConnectionUpdate() {
         boolean isConnect = remote_status && receive_heartbeat;
         UserPerference.getUserPerference(this).setIsDroneConnected(isConnect);
-        if(isConnect != cur_connect_state) {
+        if (isConnect != cur_connect_state) {
             if (isConnect) {
                 runOnUiThread(new Runnable() {
                     @Override
@@ -867,7 +887,7 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
                 });
                 Intent i = new Intent();
                 i.setAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE);
-                sendBroadcast(i);
+                FlightActivity.this.sendBroadcast(i);
             } else {
                 runOnUiThread(new Runnable() {
                     @Override
@@ -879,7 +899,7 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
                 });
                 Intent i = new Intent();
                 i.setAction(BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE);
-                sendBroadcast(i);
+                FlightActivity.this.sendBroadcast(i);
             }
         }
         cur_connect_state = isConnect;

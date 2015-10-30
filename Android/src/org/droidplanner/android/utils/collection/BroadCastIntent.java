@@ -20,5 +20,7 @@ public class BroadCastIntent {
     public static final String PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE = PACKAGE_NAME +
             ".PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE";
     public static final String PROPERTY_DRONE_XMPP_START_LOGIN = PACKAGE_NAME + ".PROPERTY_DRONE_XMPP_START_LOGIN";
+    public static final String COMMAND_DRONE_TAKE_OFF = PACKAGE_NAME + "" +
+            ".COMMAND_DRONE_TAKE_OFF";
 
 }

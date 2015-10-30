@@ -1,12 +1,11 @@
 package org.droidplanner.android.fragments.control;
 
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -44,8 +43,7 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
 
     private static final String ACTION_FLIGHT_ACTION_BUTTON = "Copter flight action button";
     private int curMode = -1;
-    private int curState = -1;
-    private Context mContext;
+    private boolean curArmed, curFlying;
 
     private boolean isConnected, isflaying, isArmed;
 
@@ -141,16 +139,29 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
                     }
                     break;
                 case BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE:
+                    Log.d("Zack", "MAXXX" + curArmed+"@"+curFlying+"@"+curMode);
+                    if(curArmed!=intent.getBooleanExtra("Arm",false)) {
+                        isArmed = intent.getBooleanExtra("Arm", false);
+                        curArmed =isArmed;
+                        UpdateXmppControlButton();
+                    }
+                    if(curFlying!=intent.getBooleanExtra("Fly", false)){
+                        isflaying =intent.getBooleanExtra("Fly", false);
+                        curFlying = isflaying;
+                        UpdateXmppControlButton();
+                    }
                     if(intent.getIntExtra("Mode",-2)!=curMode){
                         curMode = intent.getIntExtra("Mode", -2);
+                        isConnected=true;
                         UpdateXmppControlButton();
                     }
                     break;
                 case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE:
-                    setupButtonsForDisarmed();
+//                    setupButtonsForDisarmed();
                     break;
                 case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE:
-                    setupButtonsForDisconnected();
+                    isConnected = false;
+                    UpdateXmppControlButton();
                     break;
             }
         }
@@ -320,23 +331,20 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
             Intent i = new Intent();
             switch (v.getId()) {
                 case R.id.mc_armBtn:
-                    //TODO unlock
                     i.setAction(BroadCastIntent.PROPERTY_DRONE_ARM_STATE_CHANGE);
-                    i.putExtra("mode", true);
+                    i.putExtra("arm", true);
                     getActivity().sendBroadcast(i);
 
                     break;
 
                 case R.id.mc_disarmBtn:
-                    //TODO lock
                     i.setAction(BroadCastIntent.PROPERTY_DRONE_ARM_STATE_CHANGE);
-                    i.putExtra("mode", false);
+                    i.putExtra("arm", false);
                     getActivity().sendBroadcast(i);
 
                     break;
 
                 case R.id.mc_land:
-                    //TODO change mode Land;
                     i.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
                     i.putExtra("mode", DRONE_MODE.MODE_LAND);
                     getActivity().sendBroadcast(i);
@@ -344,11 +352,11 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
                     break;
 
                 case R.id.mc_takeoff:
-                    //TODO takeoff
+                    i.setAction(BroadCastIntent.COMMAND_DRONE_TAKE_OFF);
+                    getActivity().sendBroadcast(i);
                     break;
 
                 case R.id.mc_homeBtn:
-                    //TODO change mode RTL;
                     i.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
                     i.putExtra("mode", DRONE_MODE.MODE_RTL);
                     getActivity().sendBroadcast(i);
@@ -359,7 +367,6 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
                 }
 
                 case R.id.mc_autoBtn:
-                    //TODO change mode AUTO;
                     i.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
                     i.putExtra("mode", DRONE_MODE.MODE_AUTO);
                     getActivity().sendBroadcast(i);
@@ -505,6 +512,7 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
     }
 
     private void resetButtonsContainerVisibility() {
+        Log.d(TAG,"resetButtonsContainerVisibility");
         mDisconnectedButtons.setVisibility(View.GONE);
         mDisarmedButtons.setVisibility(View.GONE);
         mArmedButtons.setVisibility(View.GONE);
@@ -531,21 +539,25 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
     private void setupButtonsForDisconnected() {
         resetButtonsContainerVisibility();
         mDisconnectedButtons.setVisibility(View.VISIBLE);
+        Log.d(TAG, "setupButtonsForDisconnected");
     }
 
     private void setupButtonsForDisarmed() {
         resetButtonsContainerVisibility();
         mDisarmedButtons.setVisibility(View.VISIBLE);
+        Log.d(TAG, "setupButtonsForDisarmed");
     }
 
     private void setupButtonsForArmed() {
         resetButtonsContainerVisibility();
         mArmedButtons.setVisibility(View.VISIBLE);
+        Log.d(TAG, "setupButtonsForArmed");
     }
 
     private void setupButtonsForFlying() {
         resetButtonsContainerVisibility();
         mInFlightButtons.setVisibility(View.VISIBLE);
+        Log.d(TAG, "setupButtonsForFlying");
     }
 
     @Override
@@ -578,15 +590,14 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
     }
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        mContext = activity.getApplicationContext();
-        LocalBroadcastManager.getInstance(mContext).registerReceiver(eventReceiver, eventFilter);
+    public void onResume() {
+        super.onResume();
+        getActivity().registerReceiver(eventReceiver, eventFilter);
     }
 
     @Override
-    public void onDetach() {
-        super.onDetach();
-        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(eventReceiver);
+    public void onPause() {
+        super.onPause();
+        getActivity().unregisterReceiver(eventReceiver);
     }
 }

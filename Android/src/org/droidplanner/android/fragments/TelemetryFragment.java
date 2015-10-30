@@ -1,6 +1,5 @@
 package org.droidplanner.android.fragments;
 
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -11,7 +10,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -141,7 +140,6 @@ public class TelemetryFragment extends ApiListenerFragment {
     private TextView altitude;
     private TextView flightTimer;
     private boolean headingModeFPV;
-    private Context mContext;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -173,7 +171,7 @@ public class TelemetryFragment extends ApiListenerFragment {
             @Override
             public void onClick(View v) {
                 final Drone drone = getDrone();
-                if(drone != null && drone.isConnected())
+                if (drone != null && drone.isConnected())
                     drone.resetFlightTimer();
 
                 updateFlightTimer();
@@ -200,7 +198,7 @@ public class TelemetryFragment extends ApiListenerFragment {
         headingModeFPV = prefs.getBoolean("pref_heading_mode", false);
     }
 
-    private void updateFlightTimer(){
+    private void updateFlightTimer() {
         final Drone drone = getDrone();
         mHandler.removeCallbacks(mFlightTimeUpdater);
         if (drone != null && drone.isConnected()) {
@@ -254,7 +252,6 @@ public class TelemetryFragment extends ApiListenerFragment {
         if (altitude != null) {
             double alt = altitude.getAltitude();
             LengthUnit altUnit = getLengthUnitProvider().boxBaseValueToTarget(alt);
-
             this.altitude.setText(altUnit.toString());
         }
     }
@@ -287,21 +284,21 @@ public class TelemetryFragment extends ApiListenerFragment {
             groundSpeed.setText(speedUnitProvider.boxBaseValueToTarget(drone.getGroundSpeed()).toString());
             climbRate.setText(speedUnitProvider.boxBaseValueToTarget(drone.getVerticalSpeed()).toString());
             double alt = drone.getAlt();
+            Log.d("Zack","Alt = "+alt);
             LengthUnit altUnit = getLengthUnitProvider().boxBaseValueToTarget(alt);
             this.altitude.setText(altUnit.toString());
         }
     }
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        mContext = activity.getApplicationContext();
-        LocalBroadcastManager.getInstance(mContext).registerReceiver(eventReceiver, eventFilter);
+    public void onResume() {
+        super.onResume();
+        getActivity().registerReceiver(eventReceiver, eventFilter);
     }
 
     @Override
-    public void onDetach() {
-        super.onDetach();
-        LocalBroadcastManager.getInstance(mContext).unregisterReceiver(eventReceiver);
+    public void onPause() {
+        super.onPause();
+        getActivity().unregisterReceiver(eventReceiver);
     }
 }
