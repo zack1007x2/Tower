@@ -860,14 +860,15 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
         friends.put(friendName, item);
 
 
-        if (friendName.equals(MoApplication.CONNECT_TO) && presence.getType().name().equals
-                (MoApplication.friendType.available)){
-            remote_status = true;
-            onDroneConnectionUpdate();
+        if (friendName.equals(MoApplication.CONNECT_TO)){
+            if (presence.getType().name().equals(MoApplication.friendType.available)) {
+                remote_status = true;
+                onDroneConnectionUpdate();
 
-        } else {
-            remote_status = false;
-            onDroneConnectionUpdate();
+            } else {
+                remote_status = false;
+                onDroneConnectionUpdate();
+            }
         }
 
     }
