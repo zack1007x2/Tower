@@ -81,6 +81,9 @@ public class MoApplication extends Application {
     public static class droneConnectionState{
         public static final String Connected = "drone_connected";
         public static final String Disconnected = "drone_disconnected";
+        public static final String BTStartConnection = "Start BlueTooth Connection";
+        public static final String BTCloseConnection = "Close BlueTooth Connection";
+        public final static String BTConnectionNoResponse = "BT no response";
     }
 
     public static enum NatType {

@@ -690,6 +690,32 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
             }else if(content.contains(MoApplication.droneConnectionState.Disconnected)){
                 receive_heartbeat = false;
                 onDroneConnectionUpdate();
+            }else if(content.contains(MoApplication.droneConnectionState.BTStartConnection)){
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(FlightActivity.this, MoApplication.droneConnectionState.BTStartConnection, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }else if(content.contains(MoApplication.droneConnectionState.BTCloseConnection)){
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(FlightActivity.this, MoApplication.droneConnectionState.BTCloseConnection, Toast.LENGTH_SHORT).show();
+                    }
+                });
+                receive_heartbeat = false;
+                onDroneConnectionUpdate();
+            }else if(content.contains(MoApplication.droneConnectionState.BTConnectionNoResponse)){
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(FlightActivity.this, MoApplication.droneConnectionState.BTConnectionNoResponse,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+                receive_heartbeat = false;
+                onDroneConnectionUpdate();
             }
 
         }

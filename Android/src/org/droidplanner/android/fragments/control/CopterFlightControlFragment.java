@@ -46,6 +46,7 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
     private boolean curArmed, curFlying;
 
     private boolean isConnected, isflaying, isArmed;
+    private boolean waitForTakeOff, AutoTakeOff;
 
     private static final IntentFilter eventFilter = new IntentFilter();
 
@@ -152,12 +153,28 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
                     }
                     if(intent.getIntExtra("Mode",-2)!=curMode){
                         curMode = intent.getIntExtra("Mode", -2);
+                        if(curMode== DRONE_MODE.MODE_GUIDED){
+                            if(waitForTakeOff){
+                                Intent i = new Intent();
+                                i.setAction(BroadCastIntent.COMMAND_DRONE_TAKE_OFF);
+                                getActivity().sendBroadcast(i);
+                                waitForTakeOff =false;
+                                if(AutoTakeOff){
+                                    Intent i2 = new Intent();
+                                    i2.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
+                                    i2.putExtra("mode", DRONE_MODE.MODE_AUTO);
+                                    getActivity().sendBroadcast(i);
+                                    AutoTakeOff = false;
+                                }
+                            }
+                        }
                         isConnected=true;
                         UpdateXmppControlButton();
                     }
                     break;
                 case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_AVALIABLE:
-//                    setupButtonsForDisarmed();
+                    isConnected =true;
+                    UpdateXmppControlButton();
                     break;
                 case BroadCastIntent.PROPERTY_DRONE_XMPP_COPILOTE_UNAVALIABLE:
                     isConnected = false;
@@ -345,15 +362,22 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
                     break;
 
                 case R.id.mc_land:
-                    i.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
+
                     i.putExtra("mode", DRONE_MODE.MODE_LAND);
                     getActivity().sendBroadcast(i);
 
                     break;
 
                 case R.id.mc_takeoff:
-                    i.setAction(BroadCastIntent.COMMAND_DRONE_TAKE_OFF);
-                    getActivity().sendBroadcast(i);
+                    if(curMode ==DRONE_MODE.MODE_GUIDED){
+                        i.setAction(BroadCastIntent.COMMAND_DRONE_TAKE_OFF);
+                        getActivity().sendBroadcast(i);
+                    }else{
+                        i.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
+                        i.putExtra("mode", DRONE_MODE.MODE_GUIDED);
+                        getActivity().sendBroadcast(i);
+                        waitForTakeOff = true;
+                    }
                     break;
 
                 case R.id.mc_homeBtn:
@@ -373,6 +397,16 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
                     break;
 
                 case R.id.mc_TakeoffInAutoBtn:
+                    if(curMode ==DRONE_MODE.MODE_GUIDED){
+                        i.setAction(BroadCastIntent.COMMAND_DRONE_TAKE_OFF);
+                        getActivity().sendBroadcast(i);
+                    }else{
+                        i.setAction(BroadCastIntent.PROPERTY_DRONE_MODE_CHANGE_ACTION);
+                        i.putExtra("mode", DRONE_MODE.MODE_GUIDED);
+                        getActivity().sendBroadcast(i);
+                        waitForTakeOff = true;
+                        AutoTakeOff = true;
+                    }
                     break;
 
                 case R.id.mc_follow:
