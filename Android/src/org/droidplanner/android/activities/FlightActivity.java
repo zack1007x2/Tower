@@ -100,6 +100,8 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
     private boolean cur_connect_state;
 
     private boolean remote_status, receive_heartbeat,wasFlying;
+    private TextView tv_heartbeat;
+    private int cur_seq_counter;
 
 
     static {
@@ -274,6 +276,9 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_flight);
+
+        tv_heartbeat = (TextView)findViewById(R.id.tv_heartbeat);
+
         UserPerference.getUserPerference(this).setIsDroneConnected(false);
 
         friends = new HashMap<String, UserStatus>();
@@ -716,6 +721,19 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
                 });
                 receive_heartbeat = false;
                 onDroneConnectionUpdate();
+            }else if(content.contains(MoApplication.droneConnectionState.XMPP_HEARTBEAT_MSG)){
+                //show receive seq num and sent ack back
+                final String fcontant = content;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        String[] seq_num = fcontant.split("@");
+                        tv_heartbeat.setText(seq_num[1]);
+                        xmppConnection.sendMessage(MoApplication.CONNECT_TO, MoApplication.XMPPCommand
+                                .DRONE + MoApplication
+                                .droneConnectionState.XMPP_HEARTBEAT_ACK + "@" + seq_num[1]);
+                    }
+                });
             }
 
         }

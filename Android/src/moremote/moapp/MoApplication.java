@@ -84,6 +84,8 @@ public class MoApplication extends Application {
         public static final String BTStartConnection = "Start BlueTooth Connection";
         public static final String BTCloseConnection = "Close BlueTooth Connection";
         public final static String BTConnectionNoResponse = "BT no response";
+        public final static String XMPP_HEARTBEAT_MSG = "xmpp_heartbeat";
+        public final static String XMPP_HEARTBEAT_ACK = "xmpp_heartbeat_ack";
     }
 
     public static enum NatType {
