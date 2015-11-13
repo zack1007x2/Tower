@@ -115,12 +115,15 @@ public class FlightControlManagerFragment extends ApiListenerFragment {
 	@Override
 	public void onResume() {
 		super.onResume();
-		getActivity().registerReceiver(eventReceiver, eventFilter);
+		try{
+			getActivity().registerReceiver(eventReceiver, eventFilter);
+		}catch (Exception e){
+			e.printStackTrace();
+		}
 	}
 
 	@Override
-	public void onPause() {
-		super.onPause();
-		getActivity().unregisterReceiver(eventReceiver);
+	public void onDestroy() {
+		super.onDestroy();
 	}
 }

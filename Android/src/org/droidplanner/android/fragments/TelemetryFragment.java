@@ -10,7 +10,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -284,7 +283,6 @@ public class TelemetryFragment extends ApiListenerFragment {
             groundSpeed.setText(speedUnitProvider.boxBaseValueToTarget(drone.getGroundSpeed()).toString());
             climbRate.setText(speedUnitProvider.boxBaseValueToTarget(drone.getVerticalSpeed()).toString());
             double alt = drone.getAlt();
-            Log.d("Zack","Alt = "+alt);
             LengthUnit altUnit = getLengthUnitProvider().boxBaseValueToTarget(alt);
             this.altitude.setText(altUnit.toString());
         }
@@ -293,12 +291,16 @@ public class TelemetryFragment extends ApiListenerFragment {
     @Override
     public void onResume() {
         super.onResume();
-        getActivity().registerReceiver(eventReceiver, eventFilter);
+        try{
+            getActivity().registerReceiver(eventReceiver, eventFilter);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        getActivity().unregisterReceiver(eventReceiver);
     }
 }

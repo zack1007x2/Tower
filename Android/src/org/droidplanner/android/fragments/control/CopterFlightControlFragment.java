@@ -605,7 +605,6 @@ public class CopterFlightControlFragment extends BaseFlightControlFragment {
 
 
     private void UpdateXmppControlButton(){
-
         if (isConnected) {
             if (isArmed) {
                 if (isflaying) {

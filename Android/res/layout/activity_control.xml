@@ -13,7 +13,6 @@
         <moremote.surface.MyGLSurfaceView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="invisible"
             android:id="@+id/GLSurfaceView"/>
 
         <RelativeLayout
@@ -29,8 +28,6 @@
                 android:id="@+id/bt_streaming"
                 android:layout_centerHorizontal="true"
                 android:layout_alignParentBottom="true"
-                android:visibility="invisible"
-                android:clickable="false"
                 />
 
             <RelativeLayout

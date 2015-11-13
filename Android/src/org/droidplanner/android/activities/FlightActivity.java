@@ -959,6 +959,7 @@ public class FlightActivity extends BaseActivity implements ConnectionListener{
     @Override
     public void onResume() {
         super.onResume();
+        cur_connect_state = false;
         onDroneConnectionUpdate();
         registerReceiver(eventReceiver, eventFilter);
     }
