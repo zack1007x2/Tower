@@ -10,9 +10,7 @@ import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.OnInitListener;
 import android.support.v4.content.LocalBroadcastManager;
-import android.text.TextUtils;
 import android.util.Log;
-import android.util.SparseBooleanArray;
 import android.widget.Toast;
 
 import com.o3dr.android.client.Drone;
@@ -28,7 +26,6 @@ import com.o3dr.services.android.lib.drone.property.Speed;
 import com.o3dr.services.android.lib.drone.property.State;
 import com.o3dr.services.android.lib.drone.property.VehicleMode;
 
-import org.droidplanner.android.R;
 import org.droidplanner.android.fragments.SettingsFragment;
 import org.droidplanner.android.utils.prefs.DroidPlannerPrefs;
 
@@ -37,7 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -316,11 +312,22 @@ public class TTSNotificationProvider implements OnInitListener,
 			if (ttsLanguage == null || tts.isLanguageAvailable(ttsLanguage) == TextToSpeech.LANG_NOT_SUPPORTED) {
 				ttsLanguage = Locale.US;
 				if(sdkVersion >= Build.VERSION_CODES.LOLLIPOP) {
-					final List<Locale> availableLanguages = new ArrayList<>(tts.getAvailableLanguages());
 
-					if (!availableLanguages.isEmpty()) {
-						//Pick the first available language.
-						ttsLanguage = availableLanguages.get(0);
+					final List<Locale> availableLanguages;
+					List<Locale> tempavailableLanguages;
+					try {
+						tempavailableLanguages = new ArrayList<>(tts.getAvailableLanguages());
+					} catch (Exception e) {
+						e.printStackTrace();
+						tempavailableLanguages = null;
+					}
+
+					availableLanguages = tempavailableLanguages;
+					if(tempavailableLanguages!=null){
+						if (!availableLanguages.isEmpty()) {
+							//Pick the first available language.
+							ttsLanguage = availableLanguages.get(0);
+						}
 					}
 				}
 			}
